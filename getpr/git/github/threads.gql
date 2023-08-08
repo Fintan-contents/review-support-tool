@@ -1,0 +1,29 @@
+query Threads($org: String!, $repo: String!, $pull: Int!, $reviewThreadsLimit: Int!, $commentsLimit: Int!, $reviewThreadsCursor: String, $commentsCursor: String) {
+	repository(name: $repo, owner: $org) {
+		pullRequest(number: $pull) {
+			author { login }
+			reviewThreads(first: $reviewThreadsLimit, after: $reviewThreadsCursor) {
+				edges {
+					node {
+						id
+						isResolved
+						comments(first: $commentsLimit, after: $commentsCursor) {
+							edges {
+								node {
+									url
+									body
+									author { login }
+									createdAt
+								}
+								cursor
+							}
+							pageInfo { hasNextPage, endCursor }
+						}
+					}
+					cursor
+				}
+				pageInfo { hasNextPage, endCursor }
+			}
+		}
+	}
+}

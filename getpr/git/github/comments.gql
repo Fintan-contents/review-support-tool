@@ -1,0 +1,33 @@
+query Comments($org: String!, $repo: String!, $pull: Int!, $limit: Int!, $commentsCursor: String, $reviewsCursor: String) {
+	repository(name: $repo, owner: $org) {
+		pullRequest(number: $pull) {
+			additions, deletions
+			title, body
+			author { login }
+			comments(first: $limit, after: $commentsCursor) {
+				edges {
+					node {
+						url
+						body
+						author { login }
+						createdAt
+					}
+					cursor
+				}
+				pageInfo { hasNextPage, endCursor }
+			}
+			reviews(first: $limit, after: $reviewsCursor) {
+				edges {
+					node {
+						url
+						body
+						author { login }
+						createdAt
+					}
+					cursor
+				}
+				pageInfo { hasNextPage, endCursor }
+			}
+		}
+	}
+}

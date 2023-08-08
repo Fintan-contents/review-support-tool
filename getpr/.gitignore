@@ -1,0 +1,14 @@
+*
+!*/
+!*.*
+*.csv
+!expected/*.csv
+*.exe
+!LICENSE
+!Makefile
+.*
+!.gitignore
+!.github
+cover.out
+cover.html
+
