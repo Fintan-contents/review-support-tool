@@ -29,12 +29,12 @@ jobs:
       - name: prtool配布用ZIPファイル作成
         run: |
           cd prtool
-          7za a -tzip ../archive/プルリクエストコメント抽出ツール.zip .
+          7za a -tzip ../archive/prtool.zip .
 
       - name: doctool配布用ZIPファイル作成
         run: |
           cd doctool
-          7za a -tzip ../archive/Excel設計書レビュー指摘事項抽出ツール.zip .
+          7za a -tzip ../archive/doctool.zip .
 
       - name: ZIPファイルのアップロード
         uses: actions/upload-artifact@v3
