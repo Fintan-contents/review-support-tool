@@ -1,0 +1,44 @@
+name: 配布用ZIPアーカイブ作成
+
+on: [workflow_dispatch]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Goのセットアップ
+        uses: actions/setup-go@v3
+        with:
+          go-version: "1.19"
+
+      - name: ビルドしてgetpr.exeを生成
+        env:
+          GOOS: windows
+          GOARCH: amd64
+        run: |
+          cd getpr
+          go build -o ../prtool/プルリクエストコメント抽出ツール/getpr.exe cmd/main.go
+
+      - name: ZIPファイル作成準備
+        run: |
+          sudo apt-get install -y p7zip-full
+          mkdir archive
+
+      - name: prtool配布用ZIPファイル作成
+        run: |
+          cd prtool
+          7za a -tzip ../archive/プルリクエストコメント抽出ツール.zip .
+
+      - name: doctool配布用ZIPファイル作成
+        run: |
+          cd doctool
+          7za a -tzip ../archive/Excel設計書レビュー指摘事項抽出ツール.zip .
+
+      - name: ZIPファイルのアップロード
+        uses: actions/upload-artifact@v3
+        with:
+          name: archive
+          path: archive
+          retention-days: 1
