@@ -191,12 +191,16 @@ func (gitLab *GitLab) parseReviewCommentAndTime(mergeRequestInfo *MergeRequestIn
 	csvHeader.Deletions = deletions
 
 	for _, discussion := range *gitLabDisucussions {
-		if isReviewComment(discussion.Notes) {
+		notes := gitLab.filterNotes(discussion.Notes)
+		if len(notes) == 0 {
+			continue
+		}
+		if isReviewComment(notes) {
 			// 指摘一覧に記載する情報を取得
-			commentId := strconv.Itoa(discussion.Notes[0].ID)
-			reviewer := discussion.Notes[0].Author.Username
-			resolved := discussion.Notes[len(discussion.Notes)-1].Resolved
-			reveiwerComment, revieweeComment := gitLab.parseReviewComments(discussion.Notes, mergeRequestInfo.Author.ID)
+			commentId := strconv.Itoa(notes[0].ID)
+			reviewer := notes[0].Author.Username
+			resolved := notes[len(notes)-1].Resolved
+			reveiwerComment, revieweeComment := gitLab.parseReviewComments(notes, mergeRequestInfo.Author.ID)
 			csvReviewComments = append(csvReviewComments, csv.CsvReviewComment{
 				Url:               mergeRequestInfo.WebUrl + "#note_" + commentId,
 				ReviewerComment:   reveiwerComment,
@@ -206,13 +210,23 @@ func (gitLab *GitLab) parseReviewCommentAndTime(mergeRequestInfo *MergeRequestIn
 				Resolved:          resolved,
 				HasResolvedStatus: true,
 			})
-		} else if isTarget, index := gitLab.isTargetReviewTimeComment(discussion.Notes); isTarget {
+		} else if isTarget, index := gitLab.isTargetReviewTimeComment(notes); isTarget {
 			// レビュー日時を取得する
-			csvHeader.ReviewTime = gitLab.parseReviewTime(discussion.Notes, index)
+			csvHeader.ReviewTime = gitLab.parseReviewTime(notes, index)
 		}
 	}
 
 	return csvReviewComments, csvHeader
+}
+
+func (gitLab *GitLab) filterNotes(notes []Note) []Note {
+	filteredNotes := make([]Note, 0)
+	for _, note := range notes {
+		if !note.System {
+			filteredNotes = append(filteredNotes, note)
+		}
+	}
+	return filteredNotes
 }
 
 // レビュー指摘コメントをパースし取得する
