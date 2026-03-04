@@ -34,7 +34,6 @@ review-support-tool/
 │   │   │   └── build.sh     # VBAビルド
 │   │   ├── extract_vba.py   # VBA抽出Pythonスクリプト
 │   │   └── build_vba.py     # VBAビルドPythonスクリプト
-│   └── vba_modules/         # 一時作業ディレクトリ
 ├── doctool/
 │   ├── win-config.bat       # Windows用設定
 │   ├── wsl2-config.mk       # WSL2用設定
