@@ -25,15 +25,15 @@ Excel VBAマクロには以下の課題があります：
 review-support-tool/
 ├── vba-text-based-dev/      # VBA開発環境（汎用）
 │   ├── README.md
-│   ├── scripts/
-│   │   ├── windows/         # Windows用スクリプト
-│   │   │   ├── extract.bat  # VBA抽出
-│   │   │   └── build.bat    # VBAビルド
-│   │   ├── wsl2/            # WSL2用スクリプト
-│   │   │   ├── extract.sh   # VBA抽出
-│   │   │   └── build.sh     # VBAビルド
-│   │   ├── extract_vba.py   # VBA抽出Pythonスクリプト
-│   │   └── build_vba.py     # VBAビルドPythonスクリプト
+│   └── scripts/
+│       ├── windows/         # Windows用スクリプト
+│       │   ├── extract.bat  # VBA抽出
+│       │   └── build.bat    # VBAビルド
+│       ├── wsl2/            # WSL2用スクリプト
+│       │   ├── extract.sh   # VBA抽出
+│       │   └── build.sh     # VBAビルド
+│       ├── extract_vba.py   # VBA抽出Pythonスクリプト
+│       └── build_vba.py     # VBAビルドPythonスクリプト
 ├── doctool/
 │   ├── win-config.bat       # Windows用設定
 │   ├── wsl2-config.mk       # WSL2用設定
