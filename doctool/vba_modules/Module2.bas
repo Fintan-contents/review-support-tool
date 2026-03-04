@@ -1,3 +1,4 @@
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 Sub DelAllReviewComments_Click()
     Dim targetBookNamePattern As Object
     Set targetBookNamePattern = CreateObject("VBScript.RegExp")

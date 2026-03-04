@@ -1,20 +1,17 @@
-# Makefile for Excel VBA Tool
+# Makefile for Excel VBA Tool (Generic Version)
 
 # プロジェクトディレクトリ
 PROJECT_DIR := $(shell pwd)
 SCRIPTS_DIR := $(PROJECT_DIR)/scripts
 VBA_DIR := $(PROJECT_DIR)/vba_modules
-DOCTOOL_DIR := $(shell dirname $(PROJECT_DIR))
-XLSM_DIR := $(DOCTOOL_DIR)/Excel設計書レビュー指摘事項抽出ツール
-XLSM_FILE := $(XLSM_DIR)/Excel設計書レビュー指摘事項抽出ツール.xlsm
+
+# プロジェクト固有の設定を読み込み
+# 使い方: make -C /path/to/vba-text-based-dev CONFIG=/path/to/project/config.mk build
+-include $(CONFIG)
 
 # Windows側のPythonパス（環境に応じて調整）
 # WSL2の場合、Windowsのpython.exeを使用
 WINDOWS_PYTHON := python.exe
-
-# Windows側のビルドスクリプトパス
-# python.exeはWSL2パスを直接理解できるため、変換不要
-BUILD_SCRIPT := $(SCRIPTS_DIR)/build_vba.py
 
 # Linuxコマンド
 PYTHON := python3
@@ -23,38 +20,43 @@ PYTHON := python3
 
 # デフォルトターゲット
 help:
-	@echo "Excel VBA Tool - Makefile"
+	@echo "Excel VBA Tool - Makefile (Generic Version)"
 	@echo ""
 	@echo "使用方法:"
-	@echo "  make build     - VBAテキストファイルからxlsmファイルをビルド（Windows環境が必要）"
-	@echo "  make extract   - xlsmファイルからVBAテキストファイルを抽出"
-	@echo "  make clean     - 一時ファイルを削除"
-	@echo "  make check     - 環境チェック"
+	@echo "  make CONFIG=path/to/config.mk build   - VBAテキストファイルからxlsmファイルをビルド"
+	@echo "  make CONFIG=path/to/config.mk extract - xlsmファイルからVBAテキストファイルを抽出"
+	@echo "  make clean                            - 一時ファイルを削除"
+	@echo "  make check                            - 環境チェック"
 	@echo ""
-	@echo "テスト実行:"
-	@echo "  Windowsエクスプローラーから以下の形式のパスで直接開く:"
-	@echo "  \\\\wsl.localhost\\<ディストリビューション名>$(XLSM_DIR)/Excel設計書レビュー指摘事項抽出ツール.xlsm"
+	@echo "設定ファイル (config.mk) の例:"
+	@echo "  XLSM_FILE := /path/to/your/file.xlsm"
+	@echo "  VBA_OUTPUT_DIR := /path/to/vba_modules"
 	@echo ""
+ifdef CONFIG
 	@echo "現在の設定:"
-	@echo "  プロジェクトディレクトリ: $(PROJECT_DIR)"
-	@echo "  VBAディレクトリ: $(VBA_DIR)"
+	@echo "  設定ファイル: $(CONFIG)"
 	@echo "  xlsmファイル: $(XLSM_FILE)"
-	@echo "  ビルドスクリプト: $(BUILD_SCRIPT)"
+	@echo "  VBA出力先: $(VBA_OUTPUT_DIR)"
 	@echo ""
+else
+	@echo "⚠️  CONFIG変数が指定されていません"
+	@echo "   例: make CONFIG=../doctool/config.mk build"
+	@echo ""
+endif
 
 # VBAビルド（Windows環境が必要）
-build: check-windows
+build: check-config check-windows
 	@echo "🚀 VBAビルドを開始します..."
 	@echo ""
-	$(WINDOWS_PYTHON) "$(BUILD_SCRIPT)"
+	$(WINDOWS_PYTHON) "$(SCRIPTS_DIR)/build_vba.py" "$(VBA_OUTPUT_DIR)" "$(XLSM_FILE)"
 	@echo ""
 	@echo "✅ ビルド完了"
 
 # VBA抽出（Linux環境で実行可能）
-extract:
+extract: check-config
 	@echo "📤 VBAコードを抽出します..."
 	@echo ""
-	$(PYTHON) $(SCRIPTS_DIR)/extract_vba.py
+	$(PYTHON) $(SCRIPTS_DIR)/extract_vba.py "$(XLSM_FILE)" "$(VBA_OUTPUT_DIR)"
 	@echo ""
 	@echo "✅ 抽出完了"
 
@@ -62,13 +64,37 @@ extract:
 clean:
 	@echo "🗑️  一時ファイルを削除します..."
 	rm -f $(PROJECT_DIR)/vba_extracted_full.txt
-	find $(VBA_DIR) -name "*.pyc" -delete
+	find $(PROJECT_DIR) -name "*.pyc" -delete 2>/dev/null || true
 	@echo "✅ クリーンアップ完了"
 
 # 環境チェック
 check: check-wsl check-windows
 	@echo ""
 	@echo "✅ 環境チェック完了"
+
+# 設定ファイルチェック
+check-config:
+ifndef CONFIG
+	@echo "❌ エラー: CONFIG変数が指定されていません"
+	@echo "   使用方法: make CONFIG=path/to/config.mk <target>"
+	@echo ""
+	@echo "   例:"
+	@echo "     make CONFIG=../doctool/config.mk build"
+	@echo "     make CONFIG=../prtool/config.mk extract"
+	@exit 1
+endif
+ifndef XLSM_FILE
+	@echo "❌ エラー: XLSM_FILEが設定されていません"
+	@echo "   config.mkに以下を記載してください:"
+	@echo "   XLSM_FILE := /path/to/your/file.xlsm"
+	@exit 1
+endif
+ifndef VBA_OUTPUT_DIR
+	@echo "❌ エラー: VBA_OUTPUT_DIRが設定されていません"
+	@echo "   config.mkに以下を記載してください:"
+	@echo "   VBA_OUTPUT_DIR := /path/to/vba_modules"
+	@exit 1
+endif
 
 # WSL2環境チェック
 check-wsl:
@@ -81,13 +107,16 @@ check-wsl:
 	@if [ -d "$(VBA_DIR)" ]; then \
 		echo "  ✅ VBAディレクトリ: $(VBA_DIR)"; \
 	else \
-		echo "  ❌ VBAディレクトリが見つかりません: $(VBA_DIR)"; \
+		echo "  ⚠️  VBAディレクトリが見つかりません: $(VBA_DIR)"; \
+		echo "     (初回実行時は作成されます)"; \
 	fi
+ifdef XLSM_FILE
 	@if [ -f "$(XLSM_FILE)" ]; then \
 		echo "  ✅ xlsmファイル: $(XLSM_FILE)"; \
 	else \
 		echo "  ❌ xlsmファイルが見つかりません: $(XLSM_FILE)"; \
 	fi
+endif
 
 # Windows環境チェック
 check-windows:
