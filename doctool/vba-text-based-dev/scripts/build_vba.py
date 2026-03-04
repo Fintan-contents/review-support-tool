@@ -229,7 +229,7 @@ def build_xlsm(
         # xlsmファイルとして保存
         print(f"\n💾 xlsmファイルとして保存...")
         wb.Save()
-        print(f"✅ 保存完了: {output_xlsm}")
+        print(f"✅ 保存完了: {xlsm_path}")
 
         # ファイルを閉じる
         wb.Close(SaveChanges=False)
@@ -238,7 +238,7 @@ def build_xlsm(
         print(f"\n{'='*70}")
         print(f"🎉 ビルド成功！")
         print(f"{'='*70}")
-        print(f"出力ファイル: {output_xlsm}")
+        print(f"出力ファイル: {xlsm_path}")
         print(f"{'='*70}\n")
 
         return True

@@ -12,9 +12,9 @@ XLSM_FILE := $(XLSM_DIR)/Excel設計書レビュー指摘事項抽出ツール.x
 # WSL2の場合、Windowsのpython.exeを使用
 WINDOWS_PYTHON := python.exe
 
-# Windows側のビルドスクリプトパス（WSL2パスをWindows形式に変換）
-BUILD_SCRIPT_WSL := $(SCRIPTS_DIR)/build_vba.py
-BUILD_SCRIPT_WIN := $(shell wslpath -w $(BUILD_SCRIPT_WSL) 2>/dev/null || echo $(BUILD_SCRIPT_WSL))
+# Windows側のビルドスクリプトパス
+# python.exeはWSL2パスを直接理解できるため、変換不要
+BUILD_SCRIPT := $(SCRIPTS_DIR)/build_vba.py
 
 # Linuxコマンド
 PYTHON := python3
@@ -39,14 +39,14 @@ help:
 	@echo "  プロジェクトディレクトリ: $(PROJECT_DIR)"
 	@echo "  VBAディレクトリ: $(VBA_DIR)"
 	@echo "  xlsmファイル: $(XLSM_FILE)"
-	@echo "  Windowsビルドスクリプト: $(BUILD_SCRIPT_WIN)"
+	@echo "  ビルドスクリプト: $(BUILD_SCRIPT)"
 	@echo ""
 
 # VBAビルド（Windows環境が必要）
 build: check-windows
 	@echo "🚀 VBAビルドを開始します..."
 	@echo ""
-	$(WINDOWS_PYTHON) "$(BUILD_SCRIPT_WIN)"
+	$(WINDOWS_PYTHON) "$(BUILD_SCRIPT)"
 	@echo ""
 	@echo "✅ ビルド完了"
 
