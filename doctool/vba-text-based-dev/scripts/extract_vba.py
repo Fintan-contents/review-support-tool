@@ -27,6 +27,12 @@ import shutil
 import sys
 from pathlib import Path
 
+# Windows環境でUTF-8出力を強制
+if sys.platform == 'win32':
+    import io
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
+
 
 def extract_vba(xlsm_path: str, output_dir: str) -> int:
     """
@@ -60,6 +66,7 @@ def extract_vba(xlsm_path: str, output_dir: str) -> int:
             ['olevba', xlsm_path, '--decode'],
             capture_output=True,
             text=True,
+            encoding='utf-8',
             timeout=60
         )
     except FileNotFoundError:
