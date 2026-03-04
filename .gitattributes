@@ -1,0 +1,10 @@
+# Windows batch files
+# These files must use Shift-JIS (CP932) encoding and CRLF line endings
+# to work correctly on Windows Japanese environment
+*.bat text eol=crlf
+
+# Note: Git's working-tree-encoding attribute is not universally supported.
+# Manual conversion using iconv is required when editing these files on Unix-like systems.
+# Conversion command:
+#   iconv -f CP932 -t UTF-8 input.bat > output.bat  # For editing on Unix
+#   iconv -f UTF-8 -t CP932 input.bat > output.bat  # Before committing from Unix
