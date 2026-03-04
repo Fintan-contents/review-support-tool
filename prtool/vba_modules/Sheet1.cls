@@ -12,6 +12,7 @@ End Sub
 Private Sub CmdGen_Click()
     On Error GoTo ERROR
     Application.Cursor = xlWait
+    Application.ScreenUpdating = False
     Dim row As Integer
     Dim output As Worksheet
     Dim fileCount As Integer

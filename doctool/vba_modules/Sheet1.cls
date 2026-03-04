@@ -82,6 +82,7 @@ End Sub
 Private Sub CmdGen_Click()
     On Error GoTo ERROR
     Application.Cursor = xlWait
+    Application.ScreenUpdating = False
     'モジュールを初期化する
     initializeModule1
     Dim row As Integer
