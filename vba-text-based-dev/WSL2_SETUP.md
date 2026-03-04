@@ -77,19 +77,24 @@ cd /path/to/vba-text-based-dev
 make check
 ```
 
-### 1. プロジェクトの設定ファイルを確認
+### 1. プロジェクトの設定ファイルを作成
 
-各プロジェクトディレクトリに`config.mk`が配置されていることを確認します：
+プロジェクトディレクトリに`config.mk`を作成します：
 
-**doctool用（Excel設計書レビュー指摘事項抽出ツール）**:
-```bash
-cat ../doctool/config.mk
+```makefile
+# VBA Text-Based Dev Configuration
+
+# プロジェクトディレクトリ
+PROJECT_DIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
+
+# xlsmファイルのパス
+XLSM_FILE := $(PROJECT_DIR)/path/to/tool.xlsm
+
+# VBA出力ディレクトリ
+VBA_OUTPUT_DIR := $(PROJECT_DIR)/vba_modules
 ```
 
-**prtool用（プルリクエストコメント抽出ツール）**:
-```bash
-cat ../prtool/config.mk
-```
+`$(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))`は設定ファイルが配置されているディレクトリのパスです。
 
 ### 2. VBA抽出
 
@@ -188,7 +193,7 @@ git commit -m "feat: Update VBA code"
 
 ### 設定ファイルの例
 
-各プロジェクトの`config.mk`は以下のような内容です：
+`config.mk`は以下のような内容で作成します：
 
 ```makefile
 # VBA Text-Based Dev Configuration for doctool
