@@ -79,7 +79,7 @@ make check
 
 ### 1. プロジェクトの設定ファイルを作成
 
-プロジェクトディレクトリに`config.mk`を作成します：
+プロジェクトディレクトリに`wsl2-config.mk`を作成します：
 
 ```makefile
 # VBA Text-Based Dev Configuration
@@ -100,23 +100,14 @@ VBA_OUTPUT_DIR := $(PROJECT_DIR)/vba_modules
 
 xlsmファイルからVBAコードをテキストファイルに抽出します：
 
-**簡単な方法（シェルスクリプトを使用）**:
+**シェルスクリプトを使用（推奨）**:
 ```bash
-cd /path/to/vba-text-based-dev/scripts
-./extract.sh ../doctool/config.mk
+cd /path/to/vba-text-based-dev/scripts/wsl2
+./extract.sh ../../../doctool/wsl2-config.mk
 ```
 
-または
+または、Pythonスクリプトを直接実行：
 
-**Makefileを使用**:
-```bash
-cd /path/to/vba-text-based-dev
-make CONFIG=../doctool/config.mk extract
-```
-
-または
-
-**Pythonスクリプトを直接実行**:
 ```bash
 python3 scripts/extract_vba.py /path/to/tool.xlsm /path/to/vba_modules
 ```
@@ -125,31 +116,22 @@ python3 scripts/extract_vba.py /path/to/tool.xlsm /path/to/vba_modules
 
 ```bash
 # 任意のエディタで編集
-code ../doctool/vba_modules/Sheet1.cls
-vim ../doctool/vba_modules/Module1.bas
+code ../../../doctool/vba_modules/Sheet1.cls
+vim ../../../doctool/vba_modules/Module1.bas
 ```
 
 ### 4. VBAビルド
 
 編集したテキストファイルをxlsmファイルにマージします：
 
-**簡単な方法（シェルスクリプトを使用）**:
+**シェルスクリプトを使用（推奨）**:
 ```bash
-cd /path/to/vba-text-based-dev/scripts
-./build.sh ../doctool/config.mk
+cd /path/to/vba-text-based-dev/scripts/wsl2
+./build.sh ../../../doctool/wsl2-config.mk
 ```
 
-または
+または、Pythonスクリプトを直接実行：
 
-**Makefileを使用**:
-```bash
-cd /path/to/vba-text-based-dev
-make CONFIG=../doctool/config.mk build
-```
-
-または
-
-**Pythonスクリプトを直接実行**:
 ```bash
 python.exe scripts/build_vba.py /path/to/vba_modules /path/to/tool.xlsm
 ```
@@ -181,7 +163,7 @@ Windowsエクスプローラーから開きます：
 ### 6. Git管理
 
 ```bash
-git add ../doctool/vba_modules/
+git add ../../../doctool/vba_modules/
 git commit -m "feat: Update VBA code"
 ```
 
@@ -192,9 +174,9 @@ git commit -m "feat: Update VBA code"
 Windows環境のバッチファイルと同じように、設定ファイルのパスを指定するだけで使えます：
 
 ```bash
-cd /path/to/vba-text-based-dev/scripts
-./extract.sh ../doctool/config.mk    # VBA抽出
-./build.sh ../doctool/config.mk      # VBAビルド
+cd /path/to/vba-text-based-dev/scripts/wsl2
+./extract.sh ../../../doctool/wsl2-config.mk    # VBA抽出
+./build.sh ../../../doctool/wsl2-config.mk      # VBAビルド
 ```
 
 ### Makefile
@@ -202,8 +184,8 @@ cd /path/to/vba-text-based-dev/scripts
 より詳細な制御が必要な場合はMakefileを直接使用できます：
 
 - `make check`: 環境チェック（WSL2とWindows環境）
-- `make CONFIG=path/to/config.mk extract`: VBA抽出（WSL2で実行）
-- `make CONFIG=path/to/config.mk build`: VBAビルド（Windows側Pythonで実行）
+- `make CONFIG=path/to/wsl2-config.mk extract`: VBA抽出（WSL2で実行）
+- `make CONFIG=path/to/wsl2-config.mk build`: VBAビルド（Windows側Pythonで実行）
 - `make clean`: 一時ファイルを削除
 - `make help`: ヘルプを表示
 
@@ -220,7 +202,7 @@ cd /path/to/vba-text-based-dev/scripts
 CONFIG変数で設定ファイルのパスを必ず指定してください：
 
 ```bash
-make CONFIG=../doctool/config.mk extract
+make CONFIG=../doctool/wsl2-config.mk extract
 ```
 
 ### python.exeが見つからない

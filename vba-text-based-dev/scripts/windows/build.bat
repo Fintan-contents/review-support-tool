@@ -3,7 +3,7 @@ REM VBAビルドスクリプト
 REM xlsmファイルにVBAコードをマージします
 REM
 REM 使い方: build.bat [設定ファイルのパス]
-REM 例: build.bat ..\..\doctool\config.bat
+REM 例: build.bat ..\..\..\doctool\win-config.bat
 
 REM コンソールをUTF-8モードに切り替え
 chcp 65001 >nul
@@ -20,8 +20,8 @@ if "%~1"=="" (
     echo 使い方: build.bat [設定ファイルのパス]
     echo.
     echo 例:
-    echo   build.bat ..\..\doctool\config.bat
-    echo   build.bat ..\..\prtool\config.bat
+    echo   build.bat ..\..\..\doctool\win-config.bat
+    echo   build.bat ..\..\..\prtool\win-config.bat
     echo.
     pause
     exit /b 1
@@ -60,7 +60,7 @@ echo VBA出力先: %VBA_OUTPUT_DIR%
 echo.
 
 REM Python スクリプトを実行
-python "%~dp0build_vba.py" "%VBA_OUTPUT_DIR%" "%XLSM_FILE%"
+python "%~dp0..\build_vba.py" "%VBA_OUTPUT_DIR%" "%XLSM_FILE%"
 
 if %ERRORLEVEL% EQU 0 (
     echo.

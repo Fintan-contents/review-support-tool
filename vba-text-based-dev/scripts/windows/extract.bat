@@ -3,7 +3,7 @@ REM VBA抽出スクリプト
 REM xlsmファイルからVBAコードをテキストファイルに抽出します
 REM
 REM 使い方: extract.bat [設定ファイルのパス]
-REM 例: extract.bat ..\..\doctool\config.bat
+REM 例: extract.bat ..\..\..\doctool\win-config.bat
 
 REM コンソールをUTF-8モードに切り替え
 chcp 65001 >nul
@@ -20,8 +20,8 @@ if "%~1"=="" (
     echo 使い方: extract.bat [設定ファイルのパス]
     echo.
     echo 例:
-    echo   extract.bat ..\..\doctool\config.bat
-    echo   extract.bat ..\..\prtool\config.bat
+    echo   extract.bat ..\..\..\doctool\win-config.bat
+    echo   extract.bat ..\..\..\prtool\win-config.bat
     echo.
     pause
     exit /b 1
@@ -60,7 +60,7 @@ echo VBA出力先: %VBA_OUTPUT_DIR%
 echo.
 
 REM Python スクリプトを実行
-python "%~dp0extract_vba.py" "%XLSM_FILE%" "%VBA_OUTPUT_DIR%"
+python "%~dp0..\extract_vba.py" "%XLSM_FILE%" "%VBA_OUTPUT_DIR%"
 
 if %ERRORLEVEL% EQU 0 (
     echo.
