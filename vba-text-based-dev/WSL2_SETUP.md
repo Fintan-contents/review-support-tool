@@ -189,25 +189,7 @@ git commit -m "feat: Update VBA code"
 - `make clean`: 一時ファイルを削除
 - `make help`: ヘルプを表示
 
-**重要**: `extract`と`build`には必ず`CONFIG`変数で設定ファイルを指定してください。
-
-### 設定ファイルの例
-
-`config.mk`は以下のような内容で作成します：
-
-```makefile
-# VBA Text-Based Dev Configuration for doctool
-# Excel設計書レビュー指摘事項抽出ツール
-
-# プロジェクトディレクトリ
-DOCTOOL_DIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
-
-# xlsmファイルのパス
-XLSM_FILE := $(DOCTOOL_DIR)/Excel設計書レビュー指摘事項抽出ツール/Excel設計書レビュー指摘事項抽出ツール.xlsm
-
-# VBA出力ディレクトリ
-VBA_OUTPUT_DIR := $(DOCTOOL_DIR)/vba_modules
-```
+**重要**: `extract`と`build`には必ず`CONFIG`変数で設定ファイルを指定してください。設定ファイルの作成方法は「1. プロジェクトの設定ファイルを作成」を参照してください。
 
 ## トラブルシューティング
 
