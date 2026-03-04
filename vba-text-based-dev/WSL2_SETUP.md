@@ -100,20 +100,23 @@ VBA_OUTPUT_DIR := $(PROJECT_DIR)/vba_modules
 
 xlsmファイルからVBAコードをテキストファイルに抽出します：
 
-**doctoolの場合**:
+**簡単な方法（シェルスクリプトを使用）**:
+```bash
+cd /path/to/vba-text-based-dev/scripts
+./extract.sh ../doctool/config.mk
+```
+
+または
+
+**Makefileを使用**:
 ```bash
 cd /path/to/vba-text-based-dev
 make CONFIG=../doctool/config.mk extract
 ```
 
-**prtoolの場合**:
-```bash
-cd /path/to/vba-text-based-dev
-make CONFIG=../prtool/config.mk extract
-```
+または
 
-または、Pythonスクリプトを直接実行：
-
+**Pythonスクリプトを直接実行**:
 ```bash
 python3 scripts/extract_vba.py /path/to/tool.xlsm /path/to/vba_modules
 ```
@@ -130,20 +133,23 @@ vim ../doctool/vba_modules/Module1.bas
 
 編集したテキストファイルをxlsmファイルにマージします：
 
-**doctoolの場合**:
+**簡単な方法（シェルスクリプトを使用）**:
+```bash
+cd /path/to/vba-text-based-dev/scripts
+./build.sh ../doctool/config.mk
+```
+
+または
+
+**Makefileを使用**:
 ```bash
 cd /path/to/vba-text-based-dev
 make CONFIG=../doctool/config.mk build
 ```
 
-**prtoolの場合**:
-```bash
-cd /path/to/vba-text-based-dev
-make CONFIG=../prtool/config.mk build
-```
+または
 
-または、Pythonスクリプトを直接実行：
-
+**Pythonスクリプトを直接実行**:
 ```bash
 python.exe scripts/build_vba.py /path/to/vba_modules /path/to/tool.xlsm
 ```
@@ -179,9 +185,21 @@ git add ../doctool/vba_modules/
 git commit -m "feat: Update VBA code"
 ```
 
-## Makefile
+## シェルスクリプトとMakefile
 
-以下のターゲットが利用可能です：
+### シェルスクリプト（推奨）
+
+Windows環境のバッチファイルと同じように、設定ファイルのパスを指定するだけで使えます：
+
+```bash
+cd /path/to/vba-text-based-dev/scripts
+./extract.sh ../doctool/config.mk    # VBA抽出
+./build.sh ../doctool/config.mk      # VBAビルド
+```
+
+### Makefile
+
+より詳細な制御が必要な場合はMakefileを直接使用できます：
 
 - `make check`: 環境チェック（WSL2とWindows環境）
 - `make CONFIG=path/to/config.mk extract`: VBA抽出（WSL2で実行）
