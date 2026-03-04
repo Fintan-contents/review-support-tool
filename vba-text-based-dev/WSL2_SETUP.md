@@ -73,42 +73,77 @@ python -c "import win32com.client; print('OK')"
 WSL2とWindows環境の両方が正しく設定されているか確認します：
 
 ```bash
+cd /path/to/vba-text-based-dev
 make check
 ```
 
-### 1. VBA抽出
+### 1. プロジェクトの設定ファイルを確認
 
+各プロジェクトディレクトリに`config.mk`が配置されていることを確認します：
+
+**doctool用（Excel設計書レビュー指摘事項抽出ツール）**:
 ```bash
-make extract
+cat ../doctool/config.mk
 ```
 
-または：
-
+**prtool用（プルリクエストコメント抽出ツール）**:
 ```bash
-python3 scripts/extract_vba.py
+cat ../prtool/config.mk
 ```
 
-### 2. VBA編集
+### 2. VBA抽出
+
+xlsmファイルからVBAコードをテキストファイルに抽出します：
+
+**doctoolの場合**:
+```bash
+cd /path/to/vba-text-based-dev
+make CONFIG=../doctool/config.mk extract
+```
+
+**prtoolの場合**:
+```bash
+cd /path/to/vba-text-based-dev
+make CONFIG=../prtool/config.mk extract
+```
+
+または、Pythonスクリプトを直接実行：
+
+```bash
+python3 scripts/extract_vba.py /path/to/tool.xlsm /path/to/vba_modules
+```
+
+### 3. VBA編集
 
 ```bash
 # 任意のエディタで編集
-code vba_modules/Sheet1.cls
-vim vba_modules/Module1.bas
+code ../doctool/vba_modules/Sheet1.cls
+vim ../doctool/vba_modules/Module1.bas
 ```
 
-### 3. VBAビルド
+### 4. VBAビルド
+
+編集したテキストファイルをxlsmファイルにマージします：
+
+**doctoolの場合**:
+```bash
+cd /path/to/vba-text-based-dev
+make CONFIG=../doctool/config.mk build
+```
+
+**prtoolの場合**:
+```bash
+cd /path/to/vba-text-based-dev
+make CONFIG=../prtool/config.mk build
+```
+
+または、Pythonスクリプトを直接実行：
 
 ```bash
-make build
+python.exe scripts/build_vba.py /path/to/vba_modules /path/to/tool.xlsm
 ```
 
-または：
-
-```bash
-python.exe scripts/build_vba.py
-```
-
-### 4. テスト実行
+### 5. テスト実行
 
 Windowsエクスプローラーから開きます：
 
@@ -132,10 +167,10 @@ Windowsエクスプローラーから開きます：
 2. `ファイル` → `開く` → `参照`
 3. アドレスバーに上記の形式でパスを入力してファイルを選択
 
-### 5. Git管理
+### 6. Git管理
 
 ```bash
-git add vba_modules/
+git add ../doctool/vba_modules/
 git commit -m "feat: Update VBA code"
 ```
 
@@ -144,12 +179,44 @@ git commit -m "feat: Update VBA code"
 以下のターゲットが利用可能です：
 
 - `make check`: 環境チェック（WSL2とWindows環境）
-- `make extract`: VBA抽出（WSL2で実行）
-- `make build`: VBAビルド（Windows側Pythonで実行）
+- `make CONFIG=path/to/config.mk extract`: VBA抽出（WSL2で実行）
+- `make CONFIG=path/to/config.mk build`: VBAビルド（Windows側Pythonで実行）
 - `make clean`: 一時ファイルを削除
 - `make help`: ヘルプを表示
 
+**重要**: `extract`と`build`には必ず`CONFIG`変数で設定ファイルを指定してください。
+
+### 設定ファイルの例
+
+各プロジェクトの`config.mk`は以下のような内容です：
+
+```makefile
+# VBA Text-Based Dev Configuration for doctool
+# Excel設計書レビュー指摘事項抽出ツール
+
+# プロジェクトディレクトリ
+DOCTOOL_DIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
+
+# xlsmファイルのパス
+XLSM_FILE := $(DOCTOOL_DIR)/Excel設計書レビュー指摘事項抽出ツール/Excel設計書レビュー指摘事項抽出ツール.xlsm
+
+# VBA出力ディレクトリ
+VBA_OUTPUT_DIR := $(DOCTOOL_DIR)/vba_modules
+```
+
 ## トラブルシューティング
+
+### CONFIG変数が指定されていない
+
+**エラー**: `❌ エラー: CONFIG変数が指定されていません`
+
+**解決策**:
+
+CONFIG変数で設定ファイルのパスを必ず指定してください：
+
+```bash
+make CONFIG=../doctool/config.mk extract
+```
 
 ### python.exeが見つからない
 
