@@ -445,6 +445,19 @@ Private Sub CmdGen_Click()
                 output.Cells(ROW_DOC_ID, COL_DOC_ID) = docId
                 output.Cells(ROW_TARGET, COL_TARGET) = target
                 output.Cells(ROW_COUNT, COL_COUNT) = count
+                ' テンプレートのカテゴリヘッダー行（L14～）を設定シート順番通りに更新
+                ' テンプレートのCOUNTIF数式はこのヘッダー行のセル値を参照している
+                Const COL_CATEGORY_HEADER_START = 12  ' 列L
+                Dim catHdrKeys As Variant
+                catHdrKeys = categoryMappings.Keys
+                Dim clearCount As Long
+                clearCount = IIf(categoryMappings.Count > 9, categoryMappings.Count, 9)
+                output.Range(output.Cells(DETAIL_START_ROW - 1, COL_CATEGORY_HEADER_START), _
+                             output.Cells(DETAIL_START_ROW - 1, COL_CATEGORY_HEADER_START + clearCount - 1)).ClearContents
+                Dim catHdrIdx As Long
+                For catHdrIdx = 0 To categoryMappings.Count - 1
+                    output.Cells(DETAIL_START_ROW - 1, COL_CATEGORY_HEADER_START + catHdrIdx).Value = catHdrKeys(catHdrIdx)
+                Next catHdrIdx
                 'エラーシートが既にある場合は削除
                 If hasSheet(book, OUTPUT_ERR_SHEETNAME) = True Then
                     Application.DisplayAlerts = False
@@ -791,7 +804,7 @@ Private Sub CmdGen_Click()
                 Dim categoryList As Variant
                 Dim categoryIdx As Long
                 Dim categoryCount As Long
-                categoryList = Array("a", "b", "c", "d", "e", "f", "g", "h", "i")
+                categoryList = categoryMappings.Keys
                 '各カテゴリの摘出件数を取得し、条件付合格の判定を行う
                 categoryCount = 0
                 For categoryIdx = 0 To UBound(categoryList)
@@ -847,7 +860,7 @@ Private Sub CmdGen_Click()
                     listSheet.Cells(listRow, DETAIL_COL_LIST_REVIEW_WAY) = "回覧"
                 End If
                 Dim catIdx As Long
-                For catIdx = 0 To DETAIL_COL_LIST_CATEGORY_I - DETAIL_COL_LIST_CATEGORY_A
+                For catIdx = 0 To categoryMappings.Count - 1
                     listSheet.Cells(listRow, DETAIL_COL_LIST_CATEGORY_A + catIdx) = zeroToNull(output.Cells(ROW_CATEGORY, COL_CATEGORY_START + catIdx).Value)
                 Next catIdx
                 If (listSheet.Cells(listRow, DETAIL_COL_LIST_CATEGORY_TOTAL).Value = 0 And errcount = 0) Then
