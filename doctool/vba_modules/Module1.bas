@@ -95,6 +95,58 @@ Public Function splitComment(comment As String) As String()
     rc(2) = Join(replyComment, vbCrLf)
     splitComment = rc()
 End Function
+'=====================================================
+' 関数名: ExtractCategory
+' 機能: コメントテキストからカテゴリ（1-2文字）を抽出
+' 引数: commentText - コメント全文（"レビュア名:カテゴリ\nコメント"形式）
+' 戻値: カテゴリ文字列（"a", "ab"等）、エラー時は空文字
+'=====================================================
+Public Function ExtractCategory(commentText As String) As String
+    Dim colonPos As Long
+    Dim crlfPos As Long
+    Dim categoryLen As Long
+    Dim extractedText As String
+
+    ' コロン位置を取得（半角変換後）
+    colonPos = InStr(1, StrConv(commentText, vbNarrow), ":")
+    If colonPos = 0 Then
+        ExtractCategory = ""
+        Exit Function
+    End If
+
+    ' 改行位置を取得（コロン以降）
+    crlfPos = InStr(colonPos, commentText, vbLf)
+    If crlfPos = 0 Then
+        ' 改行がない場合は文末まで
+        crlfPos = Len(commentText) + 1
+    End If
+
+    ' カテゴリの長さを計算（最大2文字）
+    categoryLen = crlfPos - colonPos - 1
+    If categoryLen > 2 Then categoryLen = 2
+    If categoryLen < 1 Then
+        ExtractCategory = ""
+        Exit Function
+    End If
+
+    ' カテゴリを抽出（半角変換）
+    extractedText = Mid(commentText, colonPos + 1, categoryLen)
+    ExtractCategory = StrConv(extractedText, vbNarrow)
+End Function
+'=====================================================
+' 関数名: IsValidCategory
+' 機能: カテゴリが設定シートに登録済みかチェック
+' 引数: category - カテゴリ文字列
+'       categoryMappings - 設定シートから読み込んだ辞書オブジェクト
+' 戻値: True=有効、False=無効
+'=====================================================
+Public Function IsValidCategory(category As String, categoryMappings As Object) As Boolean
+    If category = "" Then
+        IsValidCategory = False
+        Exit Function
+    End If
+    IsValidCategory = categoryMappings.Exists(category)
+End Function
 Public Function extractCloseLine(commentText As String) As String
     extractCloseLine = ""
     Dim index1 As Long, index2 As Long, length As Long

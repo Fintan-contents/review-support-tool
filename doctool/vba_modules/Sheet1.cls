@@ -498,10 +498,10 @@ Private Sub CmdGen_Click()
                         If InStr(1, StrConv(commentText, vbNarrow), ":") >= 1 And InStr(1, commentText, vbLf) >= 1 Then
                             'コメントの最初の:までの文字列がレビュア
                             reviewer = Left(commentText, InStr(1, StrConv(commentText, vbNarrow), ":") - 1)
-                            ':の直後の1文字を取得して、カテゴリとする。
-                            category = StrConv(Mid(commentText, InStr(1, StrConv(commentText, vbNarrow), ":") + 1, 1), vbNarrow)
-                            'カテゴリがない(:直後が改行の)場合は処理しない
-                            If category <> vbLf Then
+                            'カテゴリを抽出（1-2文字対応）
+                            category = ExtractCategory(commentText)
+                            'カテゴリがない場合は処理しない
+                            If category <> "" Then
                                 'コメントの最後に"済"があれば対応済みと判断
                                 If GetLastChar(commentText) = "済" Then
                                     isFixed = True
@@ -598,8 +598,8 @@ Private Sub CmdGen_Click()
                                         err_output.Hyperlinks.Add err_output.Cells(err_row, 2), "", "'" & s.Name & "'" & "!" & CStr(cmnt.Parent.Address)
                                         errcount = errcount + 1
                                     End If
-                                ElseIf "a" <= category And category <= "i" Then
-                                    'a～iが指定されていればレビューコメント
+                                ElseIf IsValidCategory(category, categoryMappings) Then
+                                    '設定シートに登録済みのカテゴリであればレビューコメント
                                     'レビューコメントの位置補正
                                     If CbAdjustCmntPos.Value = True Then
                                         workCommentCell(1) = cmnt.Parent.Address
@@ -680,7 +680,7 @@ Private Sub CmdGen_Click()
                                     End If
                                     'エラーメッセージ出力
                                     err_row = err_output.Cells(Application.Rows.count, 1).End(xlUp).row + 1
-                                    err_output.Cells(err_row, 1) = "指摘分類エイリアスにa～i以外が記入されています。"
+                                    err_output.Cells(err_row, 1) = "未登録の指摘分類エイリアスが記入されています: " & category
                                     err_output.Hyperlinks.Add err_output.Cells(err_row, 2), "", "'" & s.Name & "'" & "!" & CStr(cmnt.Parent.Address)
                                     errcount = errcount + 1
                                 End If

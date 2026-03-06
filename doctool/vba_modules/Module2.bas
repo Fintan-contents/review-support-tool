@@ -20,6 +20,14 @@ Sub DelAllReviewComments_Click()
     Dim fileCount As Integer
     fileCount = 0
     Dim category As String
+    Dim categoryMappings As Object
+    Set categoryMappings = CreateObject("Scripting.Dictionary")
+    With ThisWorkbook.Worksheets("指摘分類マッピング設定")
+        Dim cmRow As Long
+        For cmRow = 2 To .Cells(Application.Rows.Count, 1).End(xlUp).Row
+            Call categoryMappings.Add(.Cells(cmRow, 1).Value, .Cells(cmRow, 2).Value)
+        Next cmRow
+    End With
     Application.ScreenUpdating = False
     '開いている全ブックを確認
     For Each book In Application.Workbooks
@@ -35,10 +43,10 @@ Sub DelAllReviewComments_Click()
                     commentText = cmnt.Text
                     'コメントに:が含まれ、改行があれば処理対象に
                     If InStr(1, StrConv(commentText, vbNarrow), ":") >= 1 And InStr(1, commentText, vbLf) >= 1 Then
-                        ':の直後の1文字を取得して、カテゴリとする。
-                        category = StrConv(Mid(commentText, InStr(1, StrConv(commentText, vbNarrow), ":") + 1, 1), vbNarrow)
-                        'カテゴリがない(:直後が改行の)場合は処理しない
-                        If category = "*" Or ("a" <= category And category <= "i") Then
+                        'カテゴリを抽出（1-2文字対応）
+                        category = ExtractCategory(commentText)
+                        'カテゴリがない場合は処理しない
+                        If category = "*" Or IsValidCategory(category, categoryMappings) Then
                             cmnt.Delete
                         End If
                     End If
