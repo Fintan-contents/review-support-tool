@@ -846,15 +846,10 @@ Private Sub CmdGen_Click()
                 If listSheet.Cells(listRow, DETAIL_COL_LIST_REVIEW_WAY).Value = "" Then
                     listSheet.Cells(listRow, DETAIL_COL_LIST_REVIEW_WAY) = "回覧"
                 End If
-                listSheet.Cells(listRow, DETAIL_COL_LIST_CATEGORY_A) = zeroToNull(output.Cells(ROW_CATEGORY, 2).Value)
-                listSheet.Cells(listRow, DETAIL_COL_LIST_CATEGORY_B) = zeroToNull(output.Cells(ROW_CATEGORY, 3).Value)
-                listSheet.Cells(listRow, DETAIL_COL_LIST_CATEGORY_C) = zeroToNull(output.Cells(ROW_CATEGORY, 4).Value)
-                listSheet.Cells(listRow, DETAIL_COL_LIST_CATEGORY_D) = zeroToNull(output.Cells(ROW_CATEGORY, 5).Value)
-                listSheet.Cells(listRow, DETAIL_COL_LIST_CATEGORY_E) = zeroToNull(output.Cells(ROW_CATEGORY, 6).Value)
-                listSheet.Cells(listRow, DETAIL_COL_LIST_CATEGORY_F) = zeroToNull(output.Cells(ROW_CATEGORY, 7).Value)
-                listSheet.Cells(listRow, DETAIL_COL_LIST_CATEGORY_G) = zeroToNull(output.Cells(ROW_CATEGORY, 8).Value)
-                listSheet.Cells(listRow, DETAIL_COL_LIST_CATEGORY_H) = zeroToNull(output.Cells(ROW_CATEGORY, 9).Value)
-                listSheet.Cells(listRow, DETAIL_COL_LIST_CATEGORY_I) = zeroToNull(output.Cells(ROW_CATEGORY, 10).Value)
+                Dim catIdx As Long
+                For catIdx = 0 To DETAIL_COL_LIST_CATEGORY_I - DETAIL_COL_LIST_CATEGORY_A
+                    listSheet.Cells(listRow, DETAIL_COL_LIST_CATEGORY_A + catIdx) = zeroToNull(output.Cells(ROW_CATEGORY, COL_CATEGORY_START + catIdx).Value)
+                Next catIdx
                 If (listSheet.Cells(listRow, DETAIL_COL_LIST_CATEGORY_TOTAL).Value = 0 And errcount = 0) Then
                     reviewResult = "合格"
                 End If
