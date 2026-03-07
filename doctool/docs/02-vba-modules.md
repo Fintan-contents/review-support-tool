@@ -40,6 +40,10 @@
 | `checkReference(book, sheet, cell)` | Boolean | セル参照の妥当性をチェック |
 | `splitComment(comment)` | String() | コメントを「レビューコメント」と「返信コメント」に分割 |
 | `extractCloseLine(commentText)` | String | コメントから「済」を含む行を抽出 |
+| `ExtractCategory(commentText)` | String | コメントからカテゴリ（1-2文字）を抽出 |
+| `IsValidCategory(category, categoryMappings)` | Boolean | カテゴリが設定シートに登録済みかチェック |
+| `LoadCategoriesFromSettings()` | Variant | 設定シートから表示順ソート済みのカテゴリ配列を取得 |
+| `SortDictionaryKeys(dict)` | Variant | Dictionary のキー（数値）を昇順ソートして配列で返す |
 
 ### Module2.bas（クリーンアップ）
 

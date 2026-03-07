@@ -66,6 +66,8 @@
 
 ### 指摘分類マッピング設定
 
+カテゴリは設定シートに上から記入した順序で処理・出力される。コード修正なしに追加・削除が可能。
+
 | エイリアス（A列） | 指摘分類（B列） |
 |----------------|---------------|
 | a | 01_要件漏れ |
@@ -77,6 +79,12 @@
 | g | 91_疑問点、確認 |
 | h | 92_改善要望 |
 | i | 93_仕様変更 |
+
+#### エイリアス体系
+
+- エイリアスは英小文字 1 文字（a〜z）または 2 文字（aa〜zz）
+- `ExtractCategory` 関数が 1〜2 文字のカテゴリを抽出する
+- `IsValidCategory` 関数で設定シートの登録済みエイリアスと照合する
 
 ---
 
@@ -145,18 +153,13 @@ Const DETAIL_COL_LIST_REVIEWER = 17      ' レビュアの列
 Const DETAIL_COL_LIST_REVIEWEE = 23      ' レビュイの列
 Const DETAIL_COL_LIST_REVIEW_WAY = 25    ' レビュー方式の列
 Const DETAIL_COL_LIST_CATEGORY_TOTAL = 28  ' 指摘合計の列
-Const DETAIL_COL_LIST_CATEGORY_A = 29      ' 指摘分類aの列
-Const DETAIL_COL_LIST_CATEGORY_B = 30      ' 指摘分類bの列
-Const DETAIL_COL_LIST_CATEGORY_C = 31      ' 指摘分類cの列
-Const DETAIL_COL_LIST_CATEGORY_D = 32      ' 指摘分類dの列
-Const DETAIL_COL_LIST_CATEGORY_E = 33      ' 指摘分類eの列
-Const DETAIL_COL_LIST_CATEGORY_F = 34      ' 指摘分類fの列
-Const DETAIL_COL_LIST_CATEGORY_G = 35      ' 指摘分類gの列
-Const DETAIL_COL_LIST_CATEGORY_H = 36      ' 指摘分類hの列
-Const DETAIL_COL_LIST_CATEGORY_I = 37      ' 指摘分類iの列
-Const DETAIL_COL_LIST_REVIEW_RESULT = 38   ' レビュー結果の列
-Const DETAIL_COL_LIST_RE_REVIEW_WAY = 39   ' 再レビュー方式の列
+Const DETAIL_COL_LIST_CATEGORY_START = 29  ' 指摘分類の開始列（v2.0: 動的。設定シートのカテゴリ数に応じてN列分使用）
+' v2.0 では以下は廃止し DETAIL_COL_LIST_CATEGORY_START + N で計算する:
+'   DETAIL_COL_LIST_REVIEW_RESULT  = DETAIL_COL_LIST_CATEGORY_START + categoryCount
+'   DETAIL_COL_LIST_RE_REVIEW_WAY  = DETAIL_COL_LIST_CATEGORY_START + categoryCount + 1
 ```
+
+> **実装メモ**: 以前は `DETAIL_COL_LIST_CATEGORY_A`〜`DETAIL_COL_LIST_CATEGORY_I`（列 29〜37）を固定定数で定義していた。カテゴリ数が可変になったため、`DETAIL_COL_LIST_CATEGORY_START = 29` を基点とした動的オフセット計算に統一する。
 
 ### クリーンアップ処理
 
@@ -185,6 +188,7 @@ Const DETAIL_COL_LIST_RE_REVIEW_WAY = 39   ' 再レビュー方式の列
 |-----|---------|----------|------|------|
 | 1 | 2026-03-04 | 1.0 | Claude Code | VBAコード解析により現状の詳細設計書を作成 |
 | 2 | 2026-03-06 | 1.1 | Claude Code | docs/ へ分割・現行仕様（Phase1+Phase2実装済み）に整理 |
+| 3 | 2026-03-07 | 1.2 | Claude Code | 動的カテゴリ対応仕様を反映：エイリアス体系セクション追加、カテゴリ列定数を動的方式（CATEGORY_START）に更新 |
 
 ---
 

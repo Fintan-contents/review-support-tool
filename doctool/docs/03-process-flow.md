@@ -34,7 +34,7 @@ flowchart TD
 
     ProcessDateTime[レビュー日時情報を処理<br/>記号: *]
 
-    ProcessReview[レビュー指摘を処理<br/>記号: a～i]
+    ProcessReview[レビュー指摘を処理<br/>登録済みカテゴリ]
 
     PostToRecord[レビュー記録票へ転記]
 
@@ -65,7 +65,7 @@ flowchart TD
     ExtractComments --> ParseComment
 
     ParseComment -->|*| ProcessDateTime
-    ParseComment -->|a～i| ProcessReview
+    ParseComment -->|登録済みカテゴリ| ProcessReview
     ParseComment -->|次のコメント| ExtractComments
 
     ProcessDateTime --> ExtractComments
@@ -94,17 +94,21 @@ flowchart TD
 flowchart TD
     Start([Excelコメント])
 
-    CheckFormat{コメント形式<br/>名前:記号}
+    CheckFormat{コメント形式<br/>名前:カテゴリ}
 
     ExtractReviewer[レビュア名を抽出<br/>コロン前の文字列]
 
-    ExtractCategory[カテゴリ記号を抽出<br/>コロン直後の1文字]
+    ExtractCategoryStep[カテゴリ記号を抽出<br/>ExtractCategory関数]
 
     CheckCategory{カテゴリ記号}
 
     DateTime[レビュー日時情報<br/>*]
 
-    Review[レビュー指摘<br/>a～i]
+    CheckRegistered{設定シートに<br/>登録済み?<br/>IsValidCategory}
+
+    Review[レビュー指摘処理]
+
+    LogError[エラーシートに記録<br/>未登録カテゴリ]
 
     Skip[処理スキップ]
 
@@ -124,12 +128,15 @@ flowchart TD
     CheckFormat -->|形式OK| ExtractReviewer
     CheckFormat -->|形式NG| Skip
 
-    ExtractReviewer --> ExtractCategory
-    ExtractCategory --> CheckCategory
+    ExtractReviewer --> ExtractCategoryStep
+    ExtractCategoryStep --> CheckCategory
 
     CheckCategory -->|*| DateTime
-    CheckCategory -->|a～i| Review
-    CheckCategory -->|その他| Skip
+    CheckCategory -->|その他文字| CheckRegistered
+    CheckCategory -->|形式NG| Skip
+
+    CheckRegistered -->|YES| Review
+    CheckRegistered -->|NO| LogError
 
     DateTime --> ParseDateTime
     ParseDateTime --> Output
@@ -142,13 +149,16 @@ flowchart TD
 
     SetFixed --> Output
     SetUnfixed --> Output
+    LogError --> Output
     Skip --> Output
 
     style Start fill:#e1f5ff
     style Output fill:#e1ffe1
     style CheckFormat fill:#ffe1e1
     style CheckCategory fill:#ffe1e1
+    style CheckRegistered fill:#ffe1e1
     style CheckFixed fill:#ffe1e1
+    style LogError fill:#ffe4e1
 ```
 
 ### レビュー記録票への転記フロー
@@ -236,7 +246,8 @@ initializeModule1
 
 **指摘分類マッピング設定の読み込み**:
 
-- エイリアス（a～i）と実際の指摘分類名の Dictionary を作成
+- エイリアスと実際の指摘分類名の Dictionary を作成
+- `categoryMappings` として保持し、`IsValidCategory` でカテゴリ検証に使用
 
 #### 3. レビュー記録一覧の処理
 
@@ -292,11 +303,11 @@ Next s
 
 ```vba
 reviewer = Left(commentText, InStr(1, StrConv(commentText, vbNarrow), ":") - 1)
-category = StrConv(Mid(commentText, InStr(1, StrConv(commentText, vbNarrow), ":") + 1, 1), vbNarrow)
+category = ExtractCategory(commentText)
 ```
 
 - `category = "*"`: レビュー日時情報
-- `"a" <= category And category <= "i"`: レビュー指摘事項
+- `IsValidCategory(category, categoryMappings) = True`: レビュー指摘事項
 
 #### 6. レビュー日時情報の処理（category = "*"）
 
@@ -406,10 +417,60 @@ reviewTime = Mid(commentText, InStr(1, commentText, "レビュー時間") + 7, .
 - レビュア
 - レビュイ
 - レビュー方式
-- 指摘分類ごとの件数（a～i）
+- 指摘分類ごとの件数（登録済みカテゴリ・動的）
 - 合計件数
 - レビュー結果
 - 再レビュー方式
+
+### カテゴリリスト管理
+
+v2.0 ではカテゴリ数が動的になるため、**カテゴリリストを2箇所のヘッダー行に記録し、実行のたびに照合**する。
+
+#### カテゴリリストの書き込み先
+
+| 書き込み先 | 位置 | タイミング |
+|-----------|------|---------|
+| レビュー結果シート | `ROW_CATEGORY - 1` 行（9行目）、`COL_CATEGORY_START`（B列）から順に | 初回シート生成時 |
+| レビュー記録一覧 | 1行目、`DETAIL_COL_LIST_CATEGORY_START`（AC列）から順に | 初回転記時 |
+
+#### カテゴリ変更の検出
+
+2回目以降の実行では、上記ヘッダー行を走査して得たカテゴリリスト（順序付き文字列）と現在の設定シートのリストを比較する。**カテゴリの追加・削除・順序変更のいずれも不一致として検出**し、E13 で処理中断する。
+
+#### 正常フロー（カテゴリ変更なし）
+
+```mermaid
+sequenceDiagram
+    participant RI as レビューイ
+    participant R as レビュアー
+    participant T as ツール
+
+    RI->>T: 1回目実行
+    Note over T: 結果シート生成<br/>ヘッダー行にカテゴリリスト記録<br/>記録一覧にカテゴリリスト記録
+    R->>RI: 追加指摘を記入
+    RI->>T: 2回目実行
+    Note over T: カテゴリリスト照合: 一致<br/>2回目シート生成
+    RI->>T: N回目実行
+    Note over T: カテゴリリスト照合: 一致<br/>N回目シート生成
+```
+
+#### カテゴリ変更エラー発生時のフロー
+
+```mermaid
+sequenceDiagram
+    participant RI as レビューイ
+    participant T as ツール
+
+    RI->>T: 1回目実行
+    Note over T: 結果シート生成<br/>ヘッダー行にカテゴリリスト記録（例: a,b,c）
+    Note over RI: 設定シートにカテゴリ追加
+    RI->>T: 2回目実行
+    Note over T: カテゴリリスト照合: 不一致<br/>E13 で処理中断
+    T-->>RI: E13「カテゴリ設定が変更されました」
+    Note over RI: レビュー結果シートをすべて削除
+    RI->>T: 1回目からやり直し
+    Note over T: 新カテゴリリストで結果シート生成<br/>記録一覧の同一行を上書き更新
+```
 
 ### splitComment関数の詳細
 
@@ -472,7 +533,7 @@ End Function
 **レビュー指摘事項**:
 
 ```
-<レビュア名>:<分類記号 a～i>
+<レビュア名>:<分類記号（設定シートのエイリアス）>
 <指摘内容>
 （複数行可）
 ---
