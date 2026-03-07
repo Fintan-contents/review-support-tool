@@ -297,6 +297,22 @@ Private Sub CmdGen_Click()
                 Exit Sub
             End If
             Set listSheet = reviewListBook.Worksheets(Range(IDX_REVIEW_LIST_SHEET).Value)
+            ' レビュー記録一覧のカテゴリヘッダー（AC4～AK4）を "{エイリアス}){指摘分類}" 形式で更新
+            Dim listHdrKeys As Variant
+            listHdrKeys = categoryMappings.Keys
+            Dim listHdrVals As Variant
+            listHdrVals = categoryMappings.Items
+            Dim listHdrClearCount As Long
+            listHdrClearCount = IIf(categoryMappings.Count > 9, categoryMappings.Count, 9)
+            Dim listHdrIdx As Long
+            For listHdrIdx = 0 To listHdrClearCount - 1
+                If listHdrIdx < categoryMappings.Count Then
+                    listSheet.Cells(4, DETAIL_COL_LIST_CATEGORY_A + listHdrIdx).Value = _
+                        listHdrKeys(listHdrIdx) & ")" & listHdrVals(listHdrIdx)
+                Else
+                    listSheet.Cells(4, DETAIL_COL_LIST_CATEGORY_A + listHdrIdx).Value = ""
+                End If
+            Next listHdrIdx
         End If
     End If
     '------------------
@@ -452,12 +468,30 @@ Private Sub CmdGen_Click()
                 catHdrKeys = categoryMappings.Keys
                 Dim clearCount As Long
                 clearCount = IIf(categoryMappings.Count > 9, categoryMappings.Count, 9)
-                output.Range(output.Cells(DETAIL_START_ROW - 1, COL_CATEGORY_HEADER_START), _
-                             output.Cells(DETAIL_START_ROW - 1, COL_CATEGORY_HEADER_START + clearCount - 1)).ClearContents
                 Dim catHdrIdx As Long
-                For catHdrIdx = 0 To categoryMappings.Count - 1
-                    output.Cells(DETAIL_START_ROW - 1, COL_CATEGORY_HEADER_START + catHdrIdx).Value = catHdrKeys(catHdrIdx)
+                For catHdrIdx = 0 To clearCount - 1
+                    If catHdrIdx < categoryMappings.Count Then
+                        output.Cells(DETAIL_START_ROW - 1, COL_CATEGORY_HEADER_START + catHdrIdx).Value = catHdrKeys(catHdrIdx)
+                    Else
+                        output.Cells(DETAIL_START_ROW - 1, COL_CATEGORY_HEADER_START + catHdrIdx).Value = ""
+                    End If
                 Next catHdrIdx
+                ' レビュー結果シートのカテゴリ列ヘッダー（B7～J8）を設定シート順番通りに更新
+                ' 行7: エイリアス、行8: 指摘分類名
+                Dim catDispVals As Variant
+                catDispVals = categoryMappings.Items
+                Dim clearHdrCount As Long
+                clearHdrCount = IIf(categoryMappings.Count > 9, categoryMappings.Count, 9)
+                Dim catDispIdx As Long
+                For catDispIdx = 0 To clearHdrCount - 1
+                    If catDispIdx < categoryMappings.Count Then
+                        output.Cells(7, COL_CATEGORY_START + catDispIdx).Value = catHdrKeys(catDispIdx)   ' エイリアス
+                        output.Cells(8, COL_CATEGORY_START + catDispIdx).Value = catDispVals(catDispIdx)  ' 指摘分類名
+                    Else
+                        output.Cells(7, COL_CATEGORY_START + catDispIdx).Value = ""
+                        output.Cells(8, COL_CATEGORY_START + catDispIdx).Value = ""
+                    End If
+                Next catDispIdx
                 'エラーシートが既にある場合は削除
                 If hasSheet(book, OUTPUT_ERR_SHEETNAME) = True Then
                     Application.DisplayAlerts = False
