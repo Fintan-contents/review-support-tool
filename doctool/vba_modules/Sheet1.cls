@@ -83,11 +83,8 @@ Private Sub CmdGen_Click()
     On Error GoTo ERROR
     Application.Cursor = xlWait
     Application.ScreenUpdating = False
-    InitTimerLog
-    RecordTimer "全体開始"
     'モジュールを初期化する
     initializeModule1
-    RecordTimer "初期化完了"
     Dim row As Integer
     Dim output As Worksheet
     Dim fileCount As Integer
@@ -221,7 +218,6 @@ Private Sub CmdGen_Click()
         '(指摘一覧)指摘クローズ
         Dim mappingListCloseLine As String: mappingListCloseLine = .Cells(13, 9).Value
     End With
-    RecordTimer "設定読み込み完了"
     reviewListFilepath = Range(IDX_REVIEW_LIST_FILEPATH).Value
     If useSimpleSummary And Len(reviewListFilepath) = 0 Then
         isCopyReviewList = False
@@ -319,7 +315,6 @@ Private Sub CmdGen_Click()
             Next listHdrIdx
         End If
     End If
-    RecordTimer "記録一覧オープン完了"
     '------------------
     ' 抽出処理
     '------------------
@@ -336,7 +331,6 @@ Private Sub CmdGen_Click()
                 '処理スキップ
                 GoTo NEXTBOOK
             Else
-                RecordTimer "[" & book.Name & "] 処理開始"
                 '基本情報
                 target = Mid(book.Name, 1, InStrRev(book.Name, ".") - 1)
                 count = Range("REVIEW_TIMES").Value
@@ -507,7 +501,6 @@ Private Sub CmdGen_Click()
                 '----------------------------------------------------------------------------
                 'レビュー指摘を抽出
                 '----------------------------------------------------------------------------
-                RecordTimer "[" & book.Name & "] コメント抽出開始"
                 row = DETAIL_START_ROW
                 Dim s As Worksheet
                 Dim cmntCell As Range
@@ -754,7 +747,6 @@ Private Sub CmdGen_Click()
                 'テンプレートの空行を削除
                 output.Range(CStr(row + 1) & ":" & CStr(row + 1)).Delete
                 Application.ScreenUpdating = True
-                RecordTimer "[" & book.Name & "] コメント抽出完了"
                 fileCount = fileCount + 1
             End If
             '----------------------------------------------------------------------------
@@ -944,11 +936,8 @@ Private Sub CmdGen_Click()
                 End If
             End If
         End If
-        RecordTimer "[" & book.Name & "] 転記完了"
 NEXTBOOK:
     Next book
-    RecordTimer "全体完了"
-    OutputTimerLog ThisWorkbook
     Application.Cursor = xlDefault
     If fileCount = 0 Then
         MsgBox "レビュー対象文書が見つかりません。", vbExclamation, "エラー"
