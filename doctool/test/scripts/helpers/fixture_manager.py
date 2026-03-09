@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Optional
 
 
-FIXTURE_BASE = Path(__file__).parent.parent.parent  # doctool/test/ (scripts/helpers/ -> scripts/ -> test/)
+FIXTURE_BASE = Path(__file__).parent.parent.parent / "auto"  # doctool/test/auto/ (scripts/helpers/ -> scripts/ -> test/ -> auto/)
 
 
 def prepare_scenario(

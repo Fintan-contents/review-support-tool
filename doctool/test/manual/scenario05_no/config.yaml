@@ -1,0 +1,29 @@
+# scenario05_no: 抽出前確認ダイアログ「いいえ」
+# 観点: 17
+
+mode: manual
+viewpoint: "観点17: 抽出前確認ダイアログ「いいえ」でそのファイルをスキップ"
+instructions:
+  - "Excelが起動したら、ファイルAのダイアログが表示されます"
+  - "ファイルA（サンプルA_S05）に対して「いいえ」をクリック"
+  - "ファイルB（サンプルB_S05）のダイアログが表示されます"
+  - "ファイルB（サンプルB_S05）に対して「はい」をクリック"
+  - "処理完了メッセージを確認して閉じる"
+
+steps:
+  - action: extract
+    review_times: 1
+
+# ファイルごとの期待状態
+# pattern: ファイル名に含まれる文字列でマッチ
+file_expectations:
+  - pattern: "サンプルA"
+    # 「いいえ」でスキップされたため、結果シートが存在しないことを確認
+    assert_no_sheets:
+      - "レビュー結果1回目"
+  - pattern: "サンプルB"
+    # 「はい」で処理されたため、結果シートをGold Masterと比較
+    # NOTE: Gold Masterファイルはまず手動実行してから作成すること
+    #   ファイル名: システム機能設計書_サンプルB_S05_expected.xlsx
+    result_sheets:
+      - "レビュー結果1回目"

@@ -28,14 +28,14 @@ DOCTOOL_XLSM = Path(__file__).parent.parent.parent / "Excel設計書レビュー
 
 
 def discover_scenarios():
-    """test/ 配下の scenarioXX ディレクトリを検出
-    
+    """test/auto/ 配下の scenarioXX ディレクトリを検出
+
     Returns:
         list[Path]: シナリオディレクトリのリスト
     """
-    test_dir = Path(__file__).parent.parent  # scripts/から一つ上に戻る
+    auto_dir = Path(__file__).parent.parent / "auto"  # test/auto/
     scenarios = [
-        d for d in test_dir.glob("scenario*")
+        d for d in auto_dir.glob("scenario*")
         if d.is_dir() and d.name.startswith("scenario")
     ]
     return sorted(scenarios)
@@ -79,8 +79,8 @@ def run_vba_for_scenario(scenario_name, tmp_path_factory):
         tuple: (scenario_dir, design_doc_name, record_name)
     """
     # scenario config読み込み
-    test_dir = Path(__file__).parent.parent  # scripts/から一つ上に戻る
-    scenario_src_dir = test_dir / scenario_name
+    auto_dir = Path(__file__).parent.parent / "auto"  # test/auto/
+    scenario_src_dir = auto_dir / scenario_name
     config = load_scenario_config(str(scenario_src_dir))
     
     # 一時作業ディレクトリ作成
@@ -306,8 +306,8 @@ class TestScenarioGoldMaster:
         print(f"{'='*60}")
         
         # config.yamlからresult_sheetsを取得
-        test_dir = Path(__file__).parent.parent  # scripts/から一つ上に戻る
-        scenario_src_dir = test_dir / scenario_name
+        auto_dir = Path(__file__).parent.parent / "auto"  # test/auto/
+        scenario_src_dir = auto_dir / scenario_name
         config = load_scenario_config(str(scenario_src_dir))
         result_sheets = config.get("result_sheets", [])
         
