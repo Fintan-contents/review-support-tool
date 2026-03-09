@@ -1,0 +1,9 @@
+# scenario02: コメント種別バリエーション
+# 観点: 02〜05
+
+steps:
+  - action: extract
+    review_times: 1
+
+result_sheets:
+  - "レビュー結果1回目"

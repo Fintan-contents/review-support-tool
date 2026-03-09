@@ -1,0 +1,15 @@
+# scenario04: 連続実行（2回目・3回目）
+# 観点: 08, 19
+
+steps:
+  - action: extract
+    review_times: 1
+  - action: extract
+    review_times: 2
+  - action: extract
+    review_times: 3
+
+result_sheets:
+  - "レビュー結果1回目"
+  - "レビュー結果2回目"
+  - "レビュー結果3回目"

@@ -1,0 +1,9 @@
+# scenario07: 日時コメント不正（要素不足）
+# 観点: 21
+
+steps:
+  - action: extract
+    review_times: 1
+
+result_sheets:
+  - "レビュー結果1回目"

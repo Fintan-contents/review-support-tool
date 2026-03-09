@@ -1,0 +1,10 @@
+# scenario01: 基本抽出（正常系）
+# 観点: 01〜06, 08〜13, 15〜16
+
+steps:
+  - action: extract
+    review_times: 1
+
+# Gold Master比較対象シート
+result_sheets:
+  - "レビュー結果1回目"

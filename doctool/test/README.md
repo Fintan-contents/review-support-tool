@@ -1,6 +1,61 @@
 # テストガイド
 
-`Excel設計書レビュー指摘事項抽出ツール.xlsm` の手動テスト用ガイド。
+`Excel設計書レビュー指摘事項抽出ツール.xlsm` のテストガイド。
+
+---
+
+## 自動テスト実行方法
+
+### クイックスタート
+
+```bash
+# 全シナリオ実行
+cd doctool/test
+run_tests.bat
+
+# 特定シナリオのみ実行
+run_tests.bat scenario04
+```
+
+または直接pytest実行：
+
+```bash
+# 全シナリオ実行
+python -m pytest scripts\test_runner.py -v
+
+# 特定シナリオのみ実行
+python -m pytest scripts\test_runner.py::TestScenarioGoldMaster::test_scenario_gold_master[scenario04] -v
+```
+
+### 自動テストの仕組み
+
+- **config.yaml駆動**: 各シナリオフォルダに`config.yaml`を配置し、テスト手順を定義
+- **Gold Master比較**: VBA実行後の出力（`*_expected.xlsx`）と比較して検証
+- **ダイアログ自動化**: testModeパラメータでダイアログをスキップし、ログで確認
+- **バックグラウンド実行**: Excelを非表示で実行（visible=False）
+
+### config.yamlの書き方
+
+```yaml
+steps:
+  - action: extract          # VBAマクロ実行
+    review_times: 1          # REVIEW_TIMES値
+    repeat: 2                # 同じREVIEW_TIMESで複数回実行（オプション）
+  - action: delete_comments  # コメント削除
+  - action: delete_sheets    # シート削除
+
+result_sheets:               # Gold Master比較対象シート
+  - "レビュー結果1回目"
+```
+
+### テスト対象範囲
+
+| テスト方法 | 対象観点 | 備考 |
+|----------|---------|-----|
+| 自動テスト | 01〜16, 19〜24 | Gold Master比較＋ダイアログログ検証 |
+| 手動テスト | 17〜18 | ダイアログの「いいえ」「キャンセル」動作 |
+
+**注**: 観点17, 18（抽出前確認ダイアログの「いいえ」「キャンセル」動作）は、ユーザー選択による分岐が必要なため手動テストで実施。
 
 ---
 
@@ -387,3 +442,30 @@ test/
     ├── システム機能設計書_サンプル_S09.xlsx
     └── システム機能設計書_サンプル_レビュー記録票_S09.xlsx
 ```
+`
+
+---
+
+## 自動テスト実行結果
+
+全シナリオ自動テスト成功:
+
+```bash
+$ python -m pytest scripts\test_runner.py -v
+# 実行時間: 約6分（351秒）
+# 結果: 9 passed
+```
+
+各シナリオの実行内容：
+- scenario01-03, 05, 07-08: 基本抽出（1回実行）
+- scenario04: 連続実行（REVIEW_TIMES=1,2,3で3回実行）
+- scenario06: 重複実行（REVIEW_TIMES=1のまま2回実行）
+- scenario09: 削除テスト（抽出コメント削除シート削除）
+
+### 実際のフォルダ構成補足
+
+- 各シナリオフォルダに`config.yaml`（テスト手順定義）を配置
+- 各入力ファイルに対応する`*_expected.xlsx`（Gold Master）を配置
+- `scripts/`フォルダにテストランナーとヘルパーモジュールを配置
+- `run_tests.bat`で簡単にテスト実行可能
+- scenario06は1ファイルのみ（重複実行検証のため同じファイルで2回実行）

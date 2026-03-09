@@ -1,0 +1,9 @@
+# scenario03: 複数日時コメント
+# 観点: 07
+
+steps:
+  - action: extract
+    review_times: 1
+
+result_sheets:
+  - "レビュー結果1回目"

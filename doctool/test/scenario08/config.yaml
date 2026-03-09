@@ -1,0 +1,9 @@
+# scenario08: レビュー記録票が開いていない
+# 観点: 14
+
+steps:
+  - action: extract
+    review_times: 1
+
+result_sheets:
+  - "レビュー結果1回目"
