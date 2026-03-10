@@ -11,7 +11,7 @@ cd /d %~dp0
 
 if "%1"=="" (
     echo ====================================
-    echo Running all tests (auto + manual)...
+    echo Running all tests ^(auto + manual^)...
     echo ====================================
 ) else (
     echo ====================================
