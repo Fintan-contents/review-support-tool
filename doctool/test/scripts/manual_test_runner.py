@@ -48,11 +48,17 @@ def _print_scenario_header(scenario_name: str, config: dict):
 def run_manual_tests(filter_names: list[str] = None):
     """手動テストを順次実行する"""
     session_log = TEMP_DIR / "test_result.log"
-    with tee_to_file(session_log):
+    # auto テストのログが既にある場合は追記（"a"）、単独実行時は新規作成（"w"）
+    mode = "a" if session_log.exists() else "w"
+    with tee_to_file(session_log, mode=mode):
         _run_manual_tests_inner(filter_names)
 
 
 def _run_manual_tests_inner(filter_names: list[str] = None):
+    print()
+    print("=" * 60)
+    print("手動テスト開始")
+    print("=" * 60)
     scenarios = discover_manual_scenarios(filter_names)
 
     if not scenarios:

@@ -11,6 +11,7 @@ pytest の PASS/FAIL で報告する。
 import pytest
 from pathlib import Path
 
+from helpers.config_loader import load_scenario_config
 from helpers.tee_logger import tee_to_file
 from scenario_runner import run_scenario, evaluate_scenario, TEMP_DIR
 
@@ -38,11 +39,13 @@ class TestScenarioGoldMaster:
         ログ: temp_dir/<scenario_name>_test.log に保存（セッションログにも含まれる）
         """
         scenario_name = scenario_dir.name
+        config = load_scenario_config(str(scenario_dir))
         log_path = TEMP_DIR / f"{scenario_name}_test.log"
 
         with tee_to_file(log_path):
             print(f"\n{'='*60}")
-            print(f"Testing scenario: {scenario_name}")
+            print(f"自動テスト: {scenario_name}")
+            print(f"観点: {config.get('viewpoint', '(不明)')}")
             print(f"{'='*60}")
 
             try:
