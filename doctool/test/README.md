@@ -28,12 +28,19 @@ run_manual_tests.bat
 
 # 特定シナリオのみ実行
 run_manual_tests.bat scenario05
+
+# 複数シナリオを指定して実行
+run_manual_tests.bat scenario05 scenario06
 ```
 
 ### 自動テスト → 手動テストをまとめて実行
 
 ```bash
+# 全テスト実行
 run_tests.bat
+
+# シナリオを絞り込んで実行（自動・手動それぞれ該当するものが実行される）
+run_tests.bat scenario07 scenario08
 ```
 
 ### テストの仕組み

@@ -4,8 +4,9 @@
 scenario_runner のコアロジックを使用し、ユーザー操作待ちのプロンプトを提供する。
 
 実行方法:
-  python scripts/manual_test_runner.py              # 全シナリオ実行
-  python scripts/manual_test_runner.py scenario05  # 特定シナリオのみ
+  python scripts/manual_test_runner.py                       # 全シナリオ実行
+  python scripts/manual_test_runner.py scenario05            # 特定シナリオのみ
+  python scripts/manual_test_runner.py scenario05 scenario06 # 複数シナリオ指定
 """
 import sys
 from pathlib import Path
@@ -17,11 +18,11 @@ from scenario_runner import run_scenario, evaluate_scenario
 MANUAL_BASE = Path(__file__).parent.parent / "manual"
 
 
-def discover_manual_scenarios(filter_name: str = None) -> list[Path]:
+def discover_manual_scenarios(filter_names: list[str] = None) -> list[Path]:
     """manual/ 配下のシナリオディレクトリを検出"""
     scenarios = sorted(d for d in MANUAL_BASE.glob("scenario*") if d.is_dir())
-    if filter_name:
-        scenarios = [s for s in scenarios if s.name == filter_name]
+    if filter_names:
+        scenarios = [s for s in scenarios if s.name in filter_names]
     return scenarios
 
 
@@ -43,13 +44,13 @@ def _print_scenario_header(scenario_name: str, config: dict):
     print()
 
 
-def run_manual_tests(filter_name: str = None):
+def run_manual_tests(filter_names: list[str] = None):
     """手動テストを順次実行する"""
-    scenarios = discover_manual_scenarios(filter_name)
+    scenarios = discover_manual_scenarios(filter_names)
 
     if not scenarios:
-        if filter_name:
-            print(f"シナリオ '{filter_name}' が見つかりません")
+        if filter_names:
+            print(f"シナリオ {filter_names} が見つかりません")
             print(f"利用可能なシナリオ: {[s.name for s in discover_manual_scenarios()]}")
         else:
             print("手動テストシナリオが見つかりません")
@@ -108,5 +109,5 @@ def run_manual_tests(filter_name: str = None):
 
 
 if __name__ == "__main__":
-    filter_name = sys.argv[1] if len(sys.argv) > 1 else None
-    run_manual_tests(filter_name)
+    filter_names = sys.argv[1:] if len(sys.argv) > 1 else None
+    run_manual_tests(filter_names)
