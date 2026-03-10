@@ -1,0 +1,5 @@
+openpyxl
+psutil
+pytest
+pyyaml
+xlwings
