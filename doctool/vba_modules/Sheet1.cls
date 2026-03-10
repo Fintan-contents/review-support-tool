@@ -1,4 +1,5 @@
-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+Option Explicit
 'ヘッダの行、列位置
 Const COL_DOC_ID = 2
 Const ROW_DOC_ID = 2
@@ -127,32 +128,26 @@ Public Sub CmdGen_Click_Core(Optional testMode As Boolean = False)
     'レビュー記録票のテンプレート行（コピー元）
     Dim postingTemplateRow As Integer
     Dim useReviewRecord As Boolean
-    useReviewRecord = ThisWorkbook.Worksheets("基本設定").Range("B2").Value
+    useReviewRecord = ThisWorkbook.Worksheets(SHEET_KIHON_SETTEI).Range("B2").Value
     Dim useSimpleSummary As Boolean
-    useSimpleSummary = ThisWorkbook.Worksheets("基本設定").Range("B3").Value
+    useSimpleSummary = ThisWorkbook.Worksheets(SHEET_KIHON_SETTEI).Range("B3").Value
+    ' 未宣言変数の宣言（H-01対応）
+    Dim res As Long
+    Dim err_output As Worksheet
+    Dim work As Variant
+    Dim cc As Variant
     Dim targetBookNamePattern As Object
-    Set targetBookNamePattern = CreateObject("VBScript.RegExp")
-    With targetBookNamePattern
-        .Pattern = ThisWorkbook.Worksheets("基本設定").Range("B4").Value
-        .IgnoreCase = False
-        .Global = True
-    End With
     Dim noTargetBookNamePattern As Object
-    Set noTargetBookNamePattern = CreateObject("VBScript.RegExp")
-    With noTargetBookNamePattern
-        .Pattern = ThisWorkbook.Worksheets("基本設定").Range("B5").Value
-        .IgnoreCase = False
-        .Global = True
-    End With
+    Call InitRegexPatterns(targetBookNamePattern, noTargetBookNamePattern)
     '設定の読み込み
     Dim categoryMappings As Object
     Set categoryMappings = CreateObject("Scripting.Dictionary")
-    With ThisWorkbook.Worksheets("指摘分類マッピング設定")
+    With ThisWorkbook.Worksheets(SHEET_SHITEKI_MAPPING)
         For row = 2 To .Cells(Application.Rows.count, 1).End(xlUp).row
             Call categoryMappings.Add(.Cells(row, 1).Value, .Cells(row, 2).Value)
         Next row
     End With
-    With ThisWorkbook.Worksheets("項目マッピング設定")
+    With ThisWorkbook.Worksheets(SHEET_KOMOKU_MAPPING)
         '項目マッピング設定
         '(ヘッダー)シート名
         Dim mappingHeaderSheet As String: mappingHeaderSheet = .Cells(2, 2).Value
@@ -307,380 +302,14 @@ Public Sub CmdGen_Click_Core(Optional testMode As Boolean = False)
                 Exit Sub
             End If
             Set listSheet = reviewListBook.Worksheets(Range(IDX_REVIEW_LIST_SHEET).Value)
-            ' [Phase3拡張] レビュー記録一覧の4行目カテゴリ列数を設定シートに合わせて調整する
-            ' AB6のSUM式の参照範囲からカテゴリ列数を取得
-            ' （4行目はカテゴリ列の右隣に"レビュー結果"等の非カテゴリ列も非空のため非空セルカウントは不適切）
-            Dim listTplCatCount As Long
-            If listSheet.Cells(DETAIL_ROW_LIST_START, DETAIL_COL_LIST_CATEGORY_TOTAL).HasFormula Then
-                listTplCatCount = listSheet.Cells(DETAIL_ROW_LIST_START, DETAIL_COL_LIST_CATEGORY_TOTAL).DirectPrecedents.Columns.Count
-            Else
-                listTplCatCount = 0
-            End If
-            Dim listCatColDiff As Long
-            listCatColDiff = categoryMappings.Count - listTplCatCount
-            Dim listColInsertIdx As Long
-            Dim listRightmostCol As Long
-            Dim listNewLastCatCol As Long
-            Dim savedNextColWidthList As Double
-            ' 備考列の位置を「現在の印刷範囲の右端列」として取得する
-            ' 印刷範囲の右端 = 備考列という仕様を利用し、テキスト検索（文字コード差異で失敗しやすい）を避ける
-            ' 幅を挿入前に保存する: 部分行挿入では列幅がシフトしないため挿入後の新位置に手動で設定が必要
-            ' また AP/AQ/AR 相当列（備考の右隣3列）の幅も保存し、挿入後に復元する
-            Dim listNoteCol As Long
-            listNoteCol = 0
-            Dim listInitPAStr As String
-            listInitPAStr = listSheet.PageSetup.PrintArea
-            If Len(listInitPAStr) > 0 Then
-                Dim listInitPARange As Range
-                Set listInitPARange = listSheet.Range(listInitPAStr)
-                listNoteCol = listInitPARange.Columns(listInitPARange.Columns.Count).Column
-            End If
-            Dim savedListNoteColWidth As Double
-            Dim savedListPastNote1Width As Double
-            Dim savedListPastNote2Width As Double
-            Dim savedListPastNote3Width As Double
-            If listNoteCol > 0 Then
-                savedListNoteColWidth = listSheet.Columns(listNoteCol).ColumnWidth
-                savedListPastNote1Width = listSheet.Columns(listNoteCol + 1).ColumnWidth
-                savedListPastNote2Width = listSheet.Columns(listNoteCol + 2).ColumnWidth
-                savedListPastNote3Width = listSheet.Columns(listNoteCol + 3).ColumnWidth
-            End If
-            If listCatColDiff > 0 Then
-                For listColInsertIdx = 1 To listCatColDiff
-                    ' 行1〜DETAIL_ROW_LIST_START: 行1のシステム名ヘッダーを含むヘッダー構造全体を右シフトする
-                    ' （行4だけでなく行1・5・6もヘッダー構造の一部のため同時にシフトが必要）
-                    ' Copy+Insert では条件付き書式が拡張されないため、空Insert→PasteSpecial方式で書式を確実にコピーする
-                    listRightmostCol = DETAIL_COL_LIST_CATEGORY_A + listTplCatCount + listColInsertIdx - 2
-                    ' Step1: クリップボードなしで空セルを挿入（行1〜DETAIL_ROW_LIST_START）
-                    Application.CutCopyMode = False
-                    listSheet.Range(listSheet.Cells(1, listRightmostCol + 1), _
-                                    listSheet.Cells(DETAIL_ROW_LIST_START, listRightmostCol + 1)).Insert Shift:=xlShiftToRight
-                    ' Step2: コピー元（行1〜DETAIL_ROW_LIST_START）をコピーし PasteSpecial で全書式を適用
-                    listSheet.Range(listSheet.Cells(1, listRightmostCol), _
-                                    listSheet.Cells(DETAIL_ROW_LIST_START, listRightmostCol)).Copy
-                    listSheet.Range(listSheet.Cells(1, listRightmostCol + 1), _
-                                    listSheet.Cells(DETAIL_ROW_LIST_START, listRightmostCol + 1)).PasteSpecial Paste:=xlPasteAll
-                    Application.CutCopyMode = False
-                    ' 列幅は PasteSpecial でコピーされないため、コピー元の列幅を明示的に設定する
-                    listSheet.Columns(listRightmostCol + 1).ColumnWidth = listSheet.Columns(listRightmostCol).ColumnWidth
-                Next listColInsertIdx
-                ' 備考列の幅を新位置（listNoteCol + listCatColDiff）に設定し、
-                ' その右隣3列（AP/AQ/AR相当）の幅も保存値で復元する
-                If listNoteCol > 0 Then
-                    listSheet.Columns(listNoteCol + listCatColDiff).ColumnWidth = savedListNoteColWidth
-                    listSheet.Columns(listNoteCol + listCatColDiff + 1).ColumnWidth = savedListPastNote1Width
-                    listSheet.Columns(listNoteCol + listCatColDiff + 2).ColumnWidth = savedListPastNote2Width
-                    listSheet.Columns(listNoteCol + listCatColDiff + 3).ColumnWidth = savedListPastNote3Width
-                    ' 非カテゴリ列（カテゴリ直後〜備考列の手前）の幅を新位置（+listCatColDiff）に設定する
-                    ' 部分行挿入では列幅がシフトしないため、内容がシフトした列の幅を明示的に設定する
-                    ' （列幅は挿入後も変わらないため元の列を直接参照して設定できる）
-                    Dim listFirstNonCatCol As Long
-                    listFirstNonCatCol = DETAIL_COL_LIST_CATEGORY_A + listTplCatCount
-                    Dim listNonCatColIdx As Long
-                    For listNonCatColIdx = listFirstNonCatCol To listNoteCol - 1
-                        listSheet.Columns(listNonCatColIdx + listCatColDiff).ColumnWidth = listSheet.Columns(listNonCatColIdx).ColumnWidth
-                    Next listNonCatColIdx
-                End If
-            ElseIf listCatColDiff < 0 Then
-                ' 行1〜DETAIL_ROW_LIST_START: ヘッダー構造全体を左シフト（カテゴリ減）
-                ' 部分行削除では列幅がシフトしないため、削除後に列幅を明示的に設定する
-                For listColInsertIdx = 1 To Abs(listCatColDiff)
-                    listRightmostCol = DETAIL_COL_LIST_CATEGORY_A + listTplCatCount - listColInsertIdx
-                    savedNextColWidthList = listSheet.Columns(listRightmostCol + 1).ColumnWidth
-                    listSheet.Range(listSheet.Cells(1, listRightmostCol), _
-                                    listSheet.Cells(DETAIL_ROW_LIST_START, listRightmostCol)).Delete Shift:=xlShiftToLeft
-                    listSheet.Columns(listRightmostCol).ColumnWidth = savedNextColWidthList
-                Next listColInsertIdx
-            End If
-            If listCatColDiff <> 0 Then
-                ' AB6（指摘合計列×開始行）のSUM式を新しいカテゴリ範囲に更新
-                listNewLastCatCol = DETAIL_COL_LIST_CATEGORY_A + categoryMappings.Count - 1
-                If listSheet.Cells(DETAIL_ROW_LIST_START, DETAIL_COL_LIST_CATEGORY_TOTAL).HasFormula Then
-                    listSheet.Cells(DETAIL_ROW_LIST_START, DETAIL_COL_LIST_CATEGORY_TOTAL).Formula = _
-                        "=SUM(" & listSheet.Cells(DETAIL_ROW_LIST_START, DETAIL_COL_LIST_CATEGORY_A).Address(False, False) & _
-                        ":" & listSheet.Cells(DETAIL_ROW_LIST_START, listNewLastCatCol).Address(False, False) & ")"
-                End If
-                ' 印刷範囲を新しい備考列の位置まで更新する
-                ' 備考列が印刷範囲の右端になるよう PageSetup.PrintArea を設定する
-                If listNoteCol > 0 Then
-                    Dim listPAStr As String
-                    listPAStr = listSheet.PageSetup.PrintArea
-                    If Len(listPAStr) > 0 Then
-                        Dim listPaRange As Range
-                        Set listPaRange = listSheet.Range(listPAStr)
-                        Dim listPaLastRow As Long
-                        listPaLastRow = listPaRange.Rows(listPaRange.Rows.Count).Row
-                        listSheet.PageSetup.PrintArea = listSheet.Range( _
-                            listSheet.Cells(1, 1), _
-                            listSheet.Cells(listPaLastRow, listNoteCol + listCatColDiff) _
-                        ).Address
-                    End If
-                End If
-            End If
-            ' レビュー記録一覧のカテゴリヘッダー（AC4～AK4）を "{エイリアス}){指摘分類}" 形式で更新
-            Dim listHdrKeys As Variant
-            listHdrKeys = categoryMappings.Keys
-            Dim listHdrVals As Variant
-            listHdrVals = categoryMappings.Items
-            Dim listHdrClearCount As Long
-            listHdrClearCount = IIf(categoryMappings.Count > 9, categoryMappings.Count, 9)
-            Dim listHdrIdx As Long
-            For listHdrIdx = 0 To listHdrClearCount - 1
-                If listHdrIdx < categoryMappings.Count Then
-                    listSheet.Cells(4, DETAIL_COL_LIST_CATEGORY_A + listHdrIdx).Value = _
-                        listHdrKeys(listHdrIdx) & ")" & listHdrVals(listHdrIdx)
-                Else
-                    listSheet.Cells(4, DETAIL_COL_LIST_CATEGORY_A + listHdrIdx).Value = ""
-                End If
-            Next listHdrIdx
+            ' [Phase3拡張] レビュー記録一覧のカテゴリ列数・ヘッダーを調整する（H-02対応: 分割）
+            Call CmdGen_AdjustListSheet(listSheet, categoryMappings)
         End If
     End If
     '------------------
-    ' [Phase3拡張] SheetTemplateのカテゴリ列数を設定シートに合わせて1回だけ調整する
-    ' 調整後のテンプレートをコピーすることで複数設計書処理時の重複処理を避ける
+    ' [Phase3拡張] SheetTemplateのカテゴリ列数を設定シートに合わせて1回だけ調整する（H-02対応: 分割）
     '------------------
-    Const COL_CATEGORY_HEADER_START = 12  ' 列L（SUMIFエイリアス列の開始）
-    ' ROW_CATEGORY行のSUM式を持つ列（計列）を特定してカテゴリ列数を取得
-    ' （行7の"計"ヘッダーが非空のため非空セルカウントは不適切）
-    Dim templateCatCount As Long
-    Dim bkSearchCol As Long
-    bkSearchCol = COL_CATEGORY_START
-    Do While bkSearchCol <= COL_CATEGORY_START + 50
-        If SheetTemplate.Cells(ROW_CATEGORY, bkSearchCol).HasFormula Then
-            If Left(SheetTemplate.Cells(ROW_CATEGORY, bkSearchCol).Formula, 5) = "=SUM(" Then Exit Do
-        End If
-        bkSearchCol = bkSearchCol + 1
-    Loop
-    templateCatCount = bkSearchCol - COL_CATEGORY_START
-    Dim catColDiff As Long
-    catColDiff = categoryMappings.Count - templateCatCount
-    ' テンプレートの現在のSUMIF開始位置（計列+1）を動的に取得する
-    ' COL_CATEGORY_HEADER_START=12 はデフォルト9カテゴリ時の値であり、
-    ' 前回実行でテンプレートが変更されている場合はずれるため定数を使用してはならない
-    Dim actualSumifStart As Long
-    actualSumifStart = COL_CATEGORY_START + templateCatCount + 1
-    ' $K列（対応状況フラグ列）はB9等の件数数式から$K15:$K16で絶対参照されている
-    ' actualSumifStartがK列以下になると行1-16 Insertで$K列がシフトし、
-    ' Excelが絶対参照を$K→$K+nに自動更新して数式が壊れる
-    ' カテゴリ減後(templateCatCount<9)のカテゴリ増で発生するため、最小値をL列に固定する
-    If actualSumifStart < COL_CATEGORY_HEADER_START Then
-        actualSumifStart = COL_CATEGORY_HEADER_START
-    End If
-    ' 計列の幅を保存する（catColDiff操作で計列が移動した際に幅を引き継ぐため）
-    ' catColDiff > 0: 行1-16 Insert で新しい計列位置の幅がデフォルト値にリセットされる
-    ' catColDiff < 0: BKループが savedNextColWidthBK チェーンで幅を伝播するが、
-    '                 前回実行でカテゴリ列幅になっている場合に正しい計列幅にならない
-    Dim oldTotalCol As Long
-    oldTotalCol = COL_CATEGORY_START + templateCatCount  ' 現在の計列（= actualSumifStart - 1）
-    Dim savedTotalColWidth As Double
-    savedTotalColWidth = SheetTemplate.Columns(oldTotalCol).ColumnWidth
-    ' ヘルパー列（最終SUMIF列の右隣）の現在位置と列幅を保存する
-    ' sumifColDiff操作後に新しいヘルパー列へ幅を復元する（部分行Insert/Deleteでは列幅が引き継がれない）
-    ' SUMIF列の標準幅を保存する（catColDiff > 0 時、旧ヘルパー列がSUMIF列になるが幅はシフトされない）
-    Dim savedSumifColWidth As Double
-    savedSumifColWidth = SheetTemplate.Columns(actualSumifStart).ColumnWidth
-    Dim preSumifCount As Long
-    preSumifCount = 0
-    Do While Len(CStr(SheetTemplate.Cells(DETAIL_START_ROW - 1, actualSumifStart + preSumifCount).Value)) > 0
-        preSumifCount = preSumifCount + 1
-    Loop
-    Dim oldHelperCol As Long
-    oldHelperCol = actualSumifStart + preSumifCount
-    Dim savedHelperWidth As Double
-    savedHelperWidth = SheetTemplate.Columns(oldHelperCol).ColumnWidth
-    Dim bkInsertIdx As Long
-    Dim rightmostBK As Long
-    Dim newTotalColBK As Long
-    Dim sumRowBK As Long
-    Dim savedNextColWidthBK As Double
-    If catColDiff > 0 Then
-        ' 【先】行1〜16: actualSumifStart からcatColDiff列分を一括右シフト
-        ' この時点では件数表示エリア（行7〜11）のactualSumifStart列以降は空のため干渉しない
-        ' 先に実施しないと、後の行7〜11挿入で計列がactualSumifStart列に来た後に行1〜16を挿入すると
-        ' 計列がさらに右に押し出されて計列の左に空列が生じるバグが発生する
-        SheetTemplate.Range( _
-            SheetTemplate.Cells(1, actualSumifStart), _
-            SheetTemplate.Cells(16, actualSumifStart + catColDiff - 1) _
-        ).Insert Shift:=xlShiftToRight
-        ' 【後】行7〜11（B-K範囲）: 右端カテゴリ列をコピーして右にセル挿入（右シフト）
-        ' Copy+Insert では条件付き書式の AppliesTo が拡張されないため、
-        ' 「空Insert → Copy → PasteSpecial xlPasteAll」の2ステップで書式を確実にコピーする
-        For bkInsertIdx = 1 To catColDiff
-            rightmostBK = COL_CATEGORY_START + templateCatCount + bkInsertIdx - 2
-            ' Step1: クリップボードなしで空セルを挿入（既存セルを右シフト）
-            Application.CutCopyMode = False
-            SheetTemplate.Range(SheetTemplate.Cells(7, rightmostBK + 1), SheetTemplate.Cells(11, rightmostBK + 1)).Insert Shift:=xlShiftToRight
-            ' Step2: コピー元をコピーし PasteSpecial で全書式（条件付き書式含む）を適用
-            SheetTemplate.Range(SheetTemplate.Cells(7, rightmostBK), SheetTemplate.Cells(11, rightmostBK)).Copy
-            SheetTemplate.Range(SheetTemplate.Cells(7, rightmostBK + 1), SheetTemplate.Cells(11, rightmostBK + 1)).PasteSpecial Paste:=xlPasteAll
-            Application.CutCopyMode = False
-            ' 列幅は PasteSpecial でコピーされないため、コピー元の列幅を明示的に設定する
-            SheetTemplate.Columns(rightmostBK + 1).ColumnWidth = SheetTemplate.Columns(rightmostBK).ColumnWidth
-        Next bkInsertIdx
-    ElseIf catColDiff < 0 Then
-        ' 行7〜11（B-K範囲）: 右端カテゴリ列を削除（左シフト）
-        ' 部分行削除では列幅がシフトしないため、削除後の計列の列幅を明示的に設定する
-        For bkInsertIdx = 1 To Abs(catColDiff)
-            rightmostBK = COL_CATEGORY_START + templateCatCount - bkInsertIdx
-            savedNextColWidthBK = SheetTemplate.Columns(rightmostBK + 1).ColumnWidth
-            SheetTemplate.Range(SheetTemplate.Cells(7, rightmostBK), SheetTemplate.Cells(11, rightmostBK)).Delete Shift:=xlShiftToLeft
-            SheetTemplate.Columns(rightmostBK).ColumnWidth = savedNextColWidthBK
-        Next bkInsertIdx
-        ' ※行1〜16の列削除は行わない
-        ' 行15:16の$K列（対応状況フラグ列）は B9等の件数表示数式から絶対参照($K15:$K16)されており、
-        ' この列を削除すると全件数セルが#REF!になる。
-        ' SUMIFフラグ列の削減は後続のsumifColDiff処理で行う。
-    End If
-    ' 計列より右かつK列（対応状況）以下の範囲の行7-11の背景色をクリアする
-    ' catColDiff < 0 のDelete操作で右隣列の書式が引き継がれ、K8（ヘッダー）や
-    ' K9-11（集計セル）に意図しない色が残る場合がある
-    Dim clrCol As Long
-    Dim clrRow As Long
-    Dim clrColStart As Long
-    Dim clrColEnd As Long
-    clrColStart = COL_CATEGORY_START + categoryMappings.Count + 1
-    clrColEnd = COL_CATEGORY_HEADER_START - 1  ' K列（対応状況）まで
-    If clrColStart <= clrColEnd Then
-        For clrCol = clrColStart To clrColEnd
-            For clrRow = 7 To 11
-                SheetTemplate.Cells(clrRow, clrCol).Interior.ColorIndex = xlNone
-            Next clrRow
-        Next clrCol
-    End If
-    ' 計列の幅を新しい位置に設定する（catColDiff操作で列位置が変わるため）
-    ' catColDiff > 0: 行1-16 Insert で新計列にデフォルト幅が割り当てられる → 旧計列の幅で上書き
-    ' catColDiff < 0: BKループが savedNextColWidthBK チェーンで幅を伝播するが、前回の実行状態に
-    '                 依存するため、ここで必ず旧計列の幅を新計列に設定して正しい幅を保証する
-    If catColDiff <> 0 Then
-        SheetTemplate.Columns(COL_CATEGORY_START + categoryMappings.Count).ColumnWidth = savedTotalColWidth
-    End If
-    If catColDiff <> 0 Then
-        ' 計列（COL_CATEGORY_START + categoryMappings.Count）のSUM式を更新
-        newTotalColBK = COL_CATEGORY_START + categoryMappings.Count
-        For sumRowBK = 7 To 11
-            If SheetTemplate.Cells(sumRowBK, newTotalColBK).HasFormula Then
-                SheetTemplate.Cells(sumRowBK, newTotalColBK).Formula = _
-                    "=SUM(" & SheetTemplate.Cells(sumRowBK, COL_CATEGORY_START).Address(False, False) & _
-                    ":" & SheetTemplate.Cells(sumRowBK, newTotalColBK - 1).Address(False, False) & ")"
-            End If
-        Next sumRowBK
-        ' 印刷範囲を更新する
-        ' 右端は「計列」か「対応状況列（$K=$COL_CATEGORY_HEADER_START-1）」の大きい方とする
-        ' catColDiff < 0 でカテゴリが9未満になると計列がK列の左に来るため、K列を最低保証する
-        Dim tplPaStr As String
-        tplPaStr = SheetTemplate.PageSetup.PrintArea
-        If Len(tplPaStr) > 0 Then
-            Dim tplPaRange As Range
-            Set tplPaRange = SheetTemplate.Range(tplPaStr)
-            Dim tplPaLastRow As Long
-            tplPaLastRow = tplPaRange.Rows(tplPaRange.Rows.Count).Row
-            Dim tplPaRightCol As Long
-            tplPaRightCol = COL_CATEGORY_START + categoryMappings.Count
-            If tplPaRightCol < COL_CATEGORY_HEADER_START - 1 Then
-                tplPaRightCol = COL_CATEGORY_HEADER_START - 1  ' $K列（対応状況）を最低保証
-            End If
-            SheetTemplate.PageSetup.PrintArea = SheetTemplate.Range( _
-                SheetTemplate.Cells(1, 1), _
-                SheetTemplate.Cells(tplPaLastRow, tplPaRightCol) _
-            ).Address
-        End If
-    End If
-    ' 行14〜16（L列以降: SUMIFフラグ列）のカテゴリ列数を調整する
-    ' catColDiff に応じて行13〜16がシフトされているため、シフト後の開始列からカウントする
-    ' （catColDiff > 0 なら COL_CATEGORY_HEADER_START + catColDiff、< 0 なら同様にシフト済み）
-    Dim templateSumifCount As Long
-    templateSumifCount = 0
-    Dim tplSumifStartCol As Long
-    ' SUMIFエリア開始列を動的に計算する
-    ' catColDiff > 0: 行1〜16 Insert でSUMIFが actualSumifStart + catColDiff に移動している
-    ' catColDiff <= 0: 行1〜16 Delete なし（$K列破壊防止のため廃止）。SUMIFは actualSumifStart のまま
-    tplSumifStartCol = actualSumifStart + IIf(catColDiff > 0, catColDiff, 0)
-    Do While Len(CStr(SheetTemplate.Cells(DETAIL_START_ROW - 1, tplSumifStartCol + templateSumifCount).Value)) > 0
-        templateSumifCount = templateSumifCount + 1
-    Loop
-    Dim sumifColDiff As Long
-    sumifColDiff = categoryMappings.Count - templateSumifCount
-    Dim ltInsertIdx As Long
-    Dim rightmostLT As Long
-    If sumifColDiff > 0 Then
-        ' 行1・14〜16: 右端SUMIFフラグ列をコピーして右にセル挿入（右シフト）
-        ' 行1（helper列テキスト「この列は削除しないでください」）も同時にシフトすることで、
-        ' helper列テキストが常に最終SUMIF列の右（正しいhelper列）に位置するようになる
-        ' Copy+Insert では条件付き書式の AppliesTo が拡張されないため、
-        ' 「空Insert → Copy → PasteSpecial xlPasteAll」の2ステップで書式を確実にコピーする
-        For ltInsertIdx = 1 To sumifColDiff
-            rightmostLT = tplSumifStartCol + templateSumifCount + ltInsertIdx - 2
-            ' Step1: 行1とSUMIF行（14〜16）にまたがる列に空セルを挿入（helper列テキストを含めて右シフト）
-            ' 行2〜13はrightmostLT+1列が空のため影響なし
-            Application.CutCopyMode = False
-            SheetTemplate.Range(SheetTemplate.Cells(1, rightmostLT + 1), _
-                                 SheetTemplate.Cells(DETAIL_START_ROW + 1, rightmostLT + 1)).Insert Shift:=xlShiftToRight
-            ' Step2: SUMIF行（14〜16）のみコピー元をコピーし PasteSpecial で全書式を適用
-            SheetTemplate.Range(SheetTemplate.Cells(DETAIL_START_ROW - 1, rightmostLT), _
-                                 SheetTemplate.Cells(DETAIL_START_ROW + 1, rightmostLT)).Copy
-            SheetTemplate.Range(SheetTemplate.Cells(DETAIL_START_ROW - 1, rightmostLT + 1), _
-                                 SheetTemplate.Cells(DETAIL_START_ROW + 1, rightmostLT + 1)).PasteSpecial Paste:=xlPasteAll
-            Application.CutCopyMode = False
-        Next ltInsertIdx
-    ElseIf sumifColDiff < 0 Then
-        ' 行1・14〜16: 右端SUMIFフラグ列を削除（左シフト）
-        ' 行1のhelper列テキストも同時にシフトする
-        For ltInsertIdx = 1 To Abs(sumifColDiff)
-            rightmostLT = tplSumifStartCol + templateSumifCount - ltInsertIdx
-            SheetTemplate.Range(SheetTemplate.Cells(1, rightmostLT), _
-                                 SheetTemplate.Cells(DETAIL_START_ROW + 1, rightmostLT)).Delete Shift:=xlShiftToLeft
-        Next ltInsertIdx
-    End If
-    ' ヘルパー列の幅を新しい位置（tplSumifStartCol + categoryMappings.Count）に設定する
-    ' 部分行Insert/Deleteでは列幅が引き継がれないため、保存した幅を明示的に復元する
-    Dim newHelperCol As Long
-    newHelperCol = tplSumifStartCol + categoryMappings.Count
-    SheetTemplate.Columns(newHelperCol).ColumnWidth = savedHelperWidth
-    ' 全SUMIF列の幅をSUMIF標準幅に統一する
-    ' 行1-16 Insert/Deleteでは列幅がシフトされないため、以前のヘルパー列位置などに
-    ' 旧ヘルパー幅（広い）が残り続ける場合がある。全SUMIF列を一括で標準幅に設定する。
-    Dim sumifWidthIdx As Long
-    For sumifWidthIdx = tplSumifStartCol To newHelperCol - 1
-        SheetTemplate.Columns(sumifWidthIdx).ColumnWidth = savedSumifColWidth
-    Next sumifWidthIdx
-    ' 計列の行14（集計用ワークヘッダー行）の背景色をクリアする
-    ' catColDiff > 0 の行1-16 Insertにより$K14（対応状況 = 黄色背景）の書式が新計列にコピーされるため
-    If catColDiff > 0 Then
-        SheetTemplate.Cells(14, COL_CATEGORY_START + categoryMappings.Count).Interior.ColorIndex = xlNone
-    End If
-    ' [Phase3拡張] SheetTemplateのカテゴリヘッダーを設定シート順番通りに書き換える
-    ' テンプレート調整フェーズで書き換えることで、コピー後のoutputシートは指摘詳細の更新のみでよくなる
-    ' 行7: エイリアス、行8: 指摘分類名（B列〜）
-    Dim tplCatHdrKeys As Variant
-    tplCatHdrKeys = categoryMappings.Keys
-    Dim tplCatHdrVals As Variant
-    tplCatHdrVals = categoryMappings.Items
-    Dim tplClearHdrCount As Long
-    ' catColDiff < 0 では行7-11 Delete で超過カテゴリ列はすでに削除済み
-    ' max(count, templateCount) にすると削除後の計列ヘッダーを "" で上書きしてしまうため
-    ' ループ範囲は categoryMappings.Count のみとする
-    tplClearHdrCount = categoryMappings.Count
-    Dim tplCatDispIdx As Long
-    For tplCatDispIdx = 0 To tplClearHdrCount - 1
-        If tplCatDispIdx < categoryMappings.Count Then
-            SheetTemplate.Cells(7, COL_CATEGORY_START + tplCatDispIdx).Value = tplCatHdrKeys(tplCatDispIdx)
-            SheetTemplate.Cells(8, COL_CATEGORY_START + tplCatDispIdx).Value = tplCatHdrVals(tplCatDispIdx)
-        Else
-            SheetTemplate.Cells(7, COL_CATEGORY_START + tplCatDispIdx).Value = ""
-            SheetTemplate.Cells(8, COL_CATEGORY_START + tplCatDispIdx).Value = ""
-        End If
-    Next tplCatDispIdx
-    ' 行14（SUMIF開始列〜）のエイリアスヘッダーを書き換える
-    Dim tplClearSumifCount As Long
-    tplClearSumifCount = IIf(categoryMappings.Count > templateSumifCount, categoryMappings.Count, templateSumifCount)
-    Dim tplCatHdrIdx As Long
-    For tplCatHdrIdx = 0 To tplClearSumifCount - 1
-        If tplCatHdrIdx < categoryMappings.Count Then
-            SheetTemplate.Cells(DETAIL_START_ROW - 1, tplSumifStartCol + tplCatHdrIdx).Value = tplCatHdrKeys(tplCatHdrIdx)
-        Else
-            SheetTemplate.Cells(DETAIL_START_ROW - 1, tplSumifStartCol + tplCatHdrIdx).Value = ""
-        End If
-    Next tplCatHdrIdx
+    Call CmdGen_AdjustSheetTemplate(categoryMappings)
     '------------------
     ' 抽出処理
     '------------------
@@ -1201,6 +830,10 @@ Public Sub CmdGen_Click_Core(Optional testMode As Boolean = False)
                 Next categoryIdx
             End If
             'ページ数の取得
+            ' 【警告】ExecuteExcel4Macro は Microsoft が段階的に無効化中（将来バージョンで動作不能になるリスクあり）
+            ' GET.DOCUMENT(50) はVBAに直接相当する関数がないため現状維持。
+            ' 代替候補: HPageBreaks.Count × VPageBreaks.Count（近似。回帰テスト要）
+            ' 参照: docs/executexl4macro-investigation.md
             Dim reviewWs As Worksheet
             volume = 0
             On Error Resume Next
@@ -1305,3 +938,310 @@ Function GetLastChar(str As String)
     work = Replace(str, vbLf, "")
     GetLastChar = Right(work, 1)
 End Function
+'=====================================================
+' CmdGen_AdjustListSheet - レビュー記録一覧のカテゴリ列数・ヘッダー調整（H-02対応）
+' Phase3拡張: 設定シートのカテゴリ数に合わせて一覧シートの列数とヘッダーを調整する
+' 引数: listSheet        - レビュー記録一覧シート
+'       categoryMappings - カテゴリ設定辞書
+'=====================================================
+Private Sub CmdGen_AdjustListSheet(listSheet As Worksheet, categoryMappings As Object)
+    ' AB6のSUM式の参照範囲からカテゴリ列数を取得
+    ' （4行目はカテゴリ列の右隣に"レビュー結果"等の非カテゴリ列も非空のため非空セルカウントは不適切）
+    Dim listTplCatCount As Long
+    If listSheet.Cells(DETAIL_ROW_LIST_START, DETAIL_COL_LIST_CATEGORY_TOTAL).HasFormula Then
+        listTplCatCount = listSheet.Cells(DETAIL_ROW_LIST_START, DETAIL_COL_LIST_CATEGORY_TOTAL).DirectPrecedents.Columns.Count
+    Else
+        listTplCatCount = 0
+    End If
+    Dim listCatColDiff As Long
+    listCatColDiff = categoryMappings.Count - listTplCatCount
+    Dim listColInsertIdx As Long
+    Dim listRightmostCol As Long
+    Dim listNewLastCatCol As Long
+    Dim savedNextColWidthList As Double
+    ' 備考列の位置を「現在の印刷範囲の右端列」として取得する
+    Dim listNoteCol As Long
+    listNoteCol = 0
+    Dim listInitPAStr As String
+    listInitPAStr = listSheet.PageSetup.PrintArea
+    If Len(listInitPAStr) > 0 Then
+        Dim listInitPARange As Range
+        Set listInitPARange = listSheet.Range(listInitPAStr)
+        listNoteCol = listInitPARange.Columns(listInitPARange.Columns.Count).Column
+    End If
+    Dim savedListNoteColWidth As Double
+    Dim savedListPastNote1Width As Double
+    Dim savedListPastNote2Width As Double
+    Dim savedListPastNote3Width As Double
+    If listNoteCol > 0 Then
+        savedListNoteColWidth = listSheet.Columns(listNoteCol).ColumnWidth
+        savedListPastNote1Width = listSheet.Columns(listNoteCol + 1).ColumnWidth
+        savedListPastNote2Width = listSheet.Columns(listNoteCol + 2).ColumnWidth
+        savedListPastNote3Width = listSheet.Columns(listNoteCol + 3).ColumnWidth
+    End If
+    If listCatColDiff > 0 Then
+        For listColInsertIdx = 1 To listCatColDiff
+            ' 行1〜DETAIL_ROW_LIST_START: 行1のシステム名ヘッダーを含むヘッダー構造全体を右シフトする
+            ' Copy+Insert では条件付き書式が拡張されないため、空Insert→PasteSpecial方式で書式を確実にコピーする
+            listRightmostCol = DETAIL_COL_LIST_CATEGORY_A + listTplCatCount + listColInsertIdx - 2
+            Application.CutCopyMode = False
+            listSheet.Range(listSheet.Cells(1, listRightmostCol + 1), _
+                            listSheet.Cells(DETAIL_ROW_LIST_START, listRightmostCol + 1)).Insert Shift:=xlShiftToRight
+            listSheet.Range(listSheet.Cells(1, listRightmostCol), _
+                            listSheet.Cells(DETAIL_ROW_LIST_START, listRightmostCol)).Copy
+            listSheet.Range(listSheet.Cells(1, listRightmostCol + 1), _
+                            listSheet.Cells(DETAIL_ROW_LIST_START, listRightmostCol + 1)).PasteSpecial Paste:=xlPasteAll
+            Application.CutCopyMode = False
+            listSheet.Columns(listRightmostCol + 1).ColumnWidth = listSheet.Columns(listRightmostCol).ColumnWidth
+        Next listColInsertIdx
+        If listNoteCol > 0 Then
+            listSheet.Columns(listNoteCol + listCatColDiff).ColumnWidth = savedListNoteColWidth
+            listSheet.Columns(listNoteCol + listCatColDiff + 1).ColumnWidth = savedListPastNote1Width
+            listSheet.Columns(listNoteCol + listCatColDiff + 2).ColumnWidth = savedListPastNote2Width
+            listSheet.Columns(listNoteCol + listCatColDiff + 3).ColumnWidth = savedListPastNote3Width
+            Dim listFirstNonCatCol As Long
+            listFirstNonCatCol = DETAIL_COL_LIST_CATEGORY_A + listTplCatCount
+            Dim listNonCatColIdx As Long
+            For listNonCatColIdx = listFirstNonCatCol To listNoteCol - 1
+                listSheet.Columns(listNonCatColIdx + listCatColDiff).ColumnWidth = listSheet.Columns(listNonCatColIdx).ColumnWidth
+            Next listNonCatColIdx
+        End If
+    ElseIf listCatColDiff < 0 Then
+        ' 行1〜DETAIL_ROW_LIST_START: ヘッダー構造全体を左シフト（カテゴリ減）
+        For listColInsertIdx = 1 To Abs(listCatColDiff)
+            listRightmostCol = DETAIL_COL_LIST_CATEGORY_A + listTplCatCount - listColInsertIdx
+            savedNextColWidthList = listSheet.Columns(listRightmostCol + 1).ColumnWidth
+            listSheet.Range(listSheet.Cells(1, listRightmostCol), _
+                            listSheet.Cells(DETAIL_ROW_LIST_START, listRightmostCol)).Delete Shift:=xlShiftToLeft
+            listSheet.Columns(listRightmostCol).ColumnWidth = savedNextColWidthList
+        Next listColInsertIdx
+    End If
+    If listCatColDiff <> 0 Then
+        listNewLastCatCol = DETAIL_COL_LIST_CATEGORY_A + categoryMappings.Count - 1
+        If listSheet.Cells(DETAIL_ROW_LIST_START, DETAIL_COL_LIST_CATEGORY_TOTAL).HasFormula Then
+            listSheet.Cells(DETAIL_ROW_LIST_START, DETAIL_COL_LIST_CATEGORY_TOTAL).Formula = _
+                "=SUM(" & listSheet.Cells(DETAIL_ROW_LIST_START, DETAIL_COL_LIST_CATEGORY_A).Address(False, False) & _
+                ":" & listSheet.Cells(DETAIL_ROW_LIST_START, listNewLastCatCol).Address(False, False) & ")"
+        End If
+        If listNoteCol > 0 Then
+            Dim listPAStr As String
+            listPAStr = listSheet.PageSetup.PrintArea
+            If Len(listPAStr) > 0 Then
+                Dim listPaRange As Range
+                Set listPaRange = listSheet.Range(listPAStr)
+                Dim listPaLastRow As Long
+                listPaLastRow = listPaRange.Rows(listPaRange.Rows.Count).Row
+                listSheet.PageSetup.PrintArea = listSheet.Range( _
+                    listSheet.Cells(1, 1), _
+                    listSheet.Cells(listPaLastRow, listNoteCol + listCatColDiff) _
+                ).Address
+            End If
+        End If
+    End If
+    ' レビュー記録一覧のカテゴリヘッダー（AC4～AK4）を "{エイリアス}){指摘分類}" 形式で更新
+    Dim listHdrKeys As Variant
+    listHdrKeys = categoryMappings.Keys
+    Dim listHdrVals As Variant
+    listHdrVals = categoryMappings.Items
+    Dim listHdrClearCount As Long
+    listHdrClearCount = IIf(categoryMappings.Count > 9, categoryMappings.Count, 9)
+    Dim listHdrIdx As Long
+    For listHdrIdx = 0 To listHdrClearCount - 1
+        If listHdrIdx < categoryMappings.Count Then
+            listSheet.Cells(4, DETAIL_COL_LIST_CATEGORY_A + listHdrIdx).Value = _
+                listHdrKeys(listHdrIdx) & ")" & listHdrVals(listHdrIdx)
+        Else
+            listSheet.Cells(4, DETAIL_COL_LIST_CATEGORY_A + listHdrIdx).Value = ""
+        End If
+    Next listHdrIdx
+End Sub
+'=====================================================
+' CmdGen_AdjustSheetTemplate - SheetTemplateのカテゴリ列数・ヘッダー調整（H-02対応）
+' Phase3拡張: 設定シートのカテゴリ数に合わせてSheetTemplateの列数を調整する
+' 調整後のテンプレートをコピーすることで複数設計書処理時の重複処理を避ける
+' 引数: categoryMappings - カテゴリ設定辞書
+'=====================================================
+Private Sub CmdGen_AdjustSheetTemplate(categoryMappings As Object)
+    Const COL_CATEGORY_HEADER_START = 12  ' 列L（SUMIFエイリアス列の開始）
+    ' ROW_CATEGORY行のSUM式を持つ列（計列）を特定してカテゴリ列数を取得
+    Dim templateCatCount As Long
+    Dim bkSearchCol As Long
+    bkSearchCol = COL_CATEGORY_START
+    Do While bkSearchCol <= COL_CATEGORY_START + 50
+        If SheetTemplate.Cells(ROW_CATEGORY, bkSearchCol).HasFormula Then
+            If Left(SheetTemplate.Cells(ROW_CATEGORY, bkSearchCol).Formula, 5) = "=SUM(" Then Exit Do
+        End If
+        bkSearchCol = bkSearchCol + 1
+    Loop
+    templateCatCount = bkSearchCol - COL_CATEGORY_START
+    Dim catColDiff As Long
+    catColDiff = categoryMappings.Count - templateCatCount
+    ' テンプレートの現在のSUMIF開始位置（計列+1）を動的に取得する
+    Dim actualSumifStart As Long
+    actualSumifStart = COL_CATEGORY_START + templateCatCount + 1
+    If actualSumifStart < COL_CATEGORY_HEADER_START Then
+        actualSumifStart = COL_CATEGORY_HEADER_START
+    End If
+    ' 計列の幅を保存する
+    Dim oldTotalCol As Long
+    oldTotalCol = COL_CATEGORY_START + templateCatCount
+    Dim savedTotalColWidth As Double
+    savedTotalColWidth = SheetTemplate.Columns(oldTotalCol).ColumnWidth
+    ' ヘルパー列の現在位置と列幅を保存する
+    Dim savedSumifColWidth As Double
+    savedSumifColWidth = SheetTemplate.Columns(actualSumifStart).ColumnWidth
+    Dim preSumifCount As Long
+    preSumifCount = 0
+    Do While Len(CStr(SheetTemplate.Cells(DETAIL_START_ROW - 1, actualSumifStart + preSumifCount).Value)) > 0
+        preSumifCount = preSumifCount + 1
+    Loop
+    Dim oldHelperCol As Long
+    oldHelperCol = actualSumifStart + preSumifCount
+    Dim savedHelperWidth As Double
+    savedHelperWidth = SheetTemplate.Columns(oldHelperCol).ColumnWidth
+    Dim bkInsertIdx As Long
+    Dim rightmostBK As Long
+    Dim newTotalColBK As Long
+    Dim sumRowBK As Long
+    Dim savedNextColWidthBK As Double
+    If catColDiff > 0 Then
+        ' 【先】行1〜16: actualSumifStart からcatColDiff列分を一括右シフト
+        SheetTemplate.Range( _
+            SheetTemplate.Cells(1, actualSumifStart), _
+            SheetTemplate.Cells(16, actualSumifStart + catColDiff - 1) _
+        ).Insert Shift:=xlShiftToRight
+        ' 【後】行7〜11（B-K範囲）: 右端カテゴリ列をコピーして右にセル挿入（右シフト）
+        For bkInsertIdx = 1 To catColDiff
+            rightmostBK = COL_CATEGORY_START + templateCatCount + bkInsertIdx - 2
+            Application.CutCopyMode = False
+            SheetTemplate.Range(SheetTemplate.Cells(7, rightmostBK + 1), SheetTemplate.Cells(11, rightmostBK + 1)).Insert Shift:=xlShiftToRight
+            SheetTemplate.Range(SheetTemplate.Cells(7, rightmostBK), SheetTemplate.Cells(11, rightmostBK)).Copy
+            SheetTemplate.Range(SheetTemplate.Cells(7, rightmostBK + 1), SheetTemplate.Cells(11, rightmostBK + 1)).PasteSpecial Paste:=xlPasteAll
+            Application.CutCopyMode = False
+            SheetTemplate.Columns(rightmostBK + 1).ColumnWidth = SheetTemplate.Columns(rightmostBK).ColumnWidth
+        Next bkInsertIdx
+    ElseIf catColDiff < 0 Then
+        ' 行7〜11（B-K範囲）: 右端カテゴリ列を削除（左シフト）
+        For bkInsertIdx = 1 To Abs(catColDiff)
+            rightmostBK = COL_CATEGORY_START + templateCatCount - bkInsertIdx
+            savedNextColWidthBK = SheetTemplate.Columns(rightmostBK + 1).ColumnWidth
+            SheetTemplate.Range(SheetTemplate.Cells(7, rightmostBK), SheetTemplate.Cells(11, rightmostBK)).Delete Shift:=xlShiftToLeft
+            SheetTemplate.Columns(rightmostBK).ColumnWidth = savedNextColWidthBK
+        Next bkInsertIdx
+    End If
+    ' 計列より右かつK列（対応状況）以下の範囲の行7-11の背景色をクリアする
+    Dim clrCol As Long
+    Dim clrRow As Long
+    Dim clrColStart As Long
+    Dim clrColEnd As Long
+    clrColStart = COL_CATEGORY_START + categoryMappings.Count + 1
+    clrColEnd = COL_CATEGORY_HEADER_START - 1
+    If clrColStart <= clrColEnd Then
+        For clrCol = clrColStart To clrColEnd
+            For clrRow = 7 To 11
+                SheetTemplate.Cells(clrRow, clrCol).Interior.ColorIndex = xlNone
+            Next clrRow
+        Next clrCol
+    End If
+    If catColDiff <> 0 Then
+        SheetTemplate.Columns(COL_CATEGORY_START + categoryMappings.Count).ColumnWidth = savedTotalColWidth
+    End If
+    If catColDiff <> 0 Then
+        newTotalColBK = COL_CATEGORY_START + categoryMappings.Count
+        For sumRowBK = 7 To 11
+            If SheetTemplate.Cells(sumRowBK, newTotalColBK).HasFormula Then
+                SheetTemplate.Cells(sumRowBK, newTotalColBK).Formula = _
+                    "=SUM(" & SheetTemplate.Cells(sumRowBK, COL_CATEGORY_START).Address(False, False) & _
+                    ":" & SheetTemplate.Cells(sumRowBK, newTotalColBK - 1).Address(False, False) & ")"
+            End If
+        Next sumRowBK
+        Dim tplPaStr As String
+        tplPaStr = SheetTemplate.PageSetup.PrintArea
+        If Len(tplPaStr) > 0 Then
+            Dim tplPaRange As Range
+            Set tplPaRange = SheetTemplate.Range(tplPaStr)
+            Dim tplPaLastRow As Long
+            tplPaLastRow = tplPaRange.Rows(tplPaRange.Rows.Count).Row
+            Dim tplPaRightCol As Long
+            tplPaRightCol = COL_CATEGORY_START + categoryMappings.Count
+            If tplPaRightCol < COL_CATEGORY_HEADER_START - 1 Then
+                tplPaRightCol = COL_CATEGORY_HEADER_START - 1
+            End If
+            SheetTemplate.PageSetup.PrintArea = SheetTemplate.Range( _
+                SheetTemplate.Cells(1, 1), _
+                SheetTemplate.Cells(tplPaLastRow, tplPaRightCol) _
+            ).Address
+        End If
+    End If
+    ' 行14〜16（L列以降: SUMIFフラグ列）のカテゴリ列数を調整する
+    Dim templateSumifCount As Long
+    templateSumifCount = 0
+    Dim tplSumifStartCol As Long
+    tplSumifStartCol = actualSumifStart + IIf(catColDiff > 0, catColDiff, 0)
+    Do While Len(CStr(SheetTemplate.Cells(DETAIL_START_ROW - 1, tplSumifStartCol + templateSumifCount).Value)) > 0
+        templateSumifCount = templateSumifCount + 1
+    Loop
+    Dim sumifColDiff As Long
+    sumifColDiff = categoryMappings.Count - templateSumifCount
+    Dim ltInsertIdx As Long
+    Dim rightmostLT As Long
+    If sumifColDiff > 0 Then
+        For ltInsertIdx = 1 To sumifColDiff
+            rightmostLT = tplSumifStartCol + templateSumifCount + ltInsertIdx - 2
+            Application.CutCopyMode = False
+            SheetTemplate.Range(SheetTemplate.Cells(1, rightmostLT + 1), _
+                                 SheetTemplate.Cells(DETAIL_START_ROW + 1, rightmostLT + 1)).Insert Shift:=xlShiftToRight
+            SheetTemplate.Range(SheetTemplate.Cells(DETAIL_START_ROW - 1, rightmostLT), _
+                                 SheetTemplate.Cells(DETAIL_START_ROW + 1, rightmostLT)).Copy
+            SheetTemplate.Range(SheetTemplate.Cells(DETAIL_START_ROW - 1, rightmostLT + 1), _
+                                 SheetTemplate.Cells(DETAIL_START_ROW + 1, rightmostLT + 1)).PasteSpecial Paste:=xlPasteAll
+            Application.CutCopyMode = False
+        Next ltInsertIdx
+    ElseIf sumifColDiff < 0 Then
+        For ltInsertIdx = 1 To Abs(sumifColDiff)
+            rightmostLT = tplSumifStartCol + templateSumifCount - ltInsertIdx
+            SheetTemplate.Range(SheetTemplate.Cells(1, rightmostLT), _
+                                 SheetTemplate.Cells(DETAIL_START_ROW + 1, rightmostLT)).Delete Shift:=xlShiftToLeft
+        Next ltInsertIdx
+    End If
+    ' ヘルパー列の幅を新しい位置に設定する
+    Dim newHelperCol As Long
+    newHelperCol = tplSumifStartCol + categoryMappings.Count
+    SheetTemplate.Columns(newHelperCol).ColumnWidth = savedHelperWidth
+    ' 全SUMIF列の幅をSUMIF標準幅に統一する
+    Dim sumifWidthIdx As Long
+    For sumifWidthIdx = tplSumifStartCol To newHelperCol - 1
+        SheetTemplate.Columns(sumifWidthIdx).ColumnWidth = savedSumifColWidth
+    Next sumifWidthIdx
+    If catColDiff > 0 Then
+        SheetTemplate.Cells(14, COL_CATEGORY_START + categoryMappings.Count).Interior.ColorIndex = xlNone
+    End If
+    ' SheetTemplateのカテゴリヘッダーを設定シート順番通りに書き換える
+    Dim tplCatHdrKeys As Variant
+    tplCatHdrKeys = categoryMappings.Keys
+    Dim tplCatHdrVals As Variant
+    tplCatHdrVals = categoryMappings.Items
+    Dim tplClearHdrCount As Long
+    tplClearHdrCount = categoryMappings.Count
+    Dim tplCatDispIdx As Long
+    For tplCatDispIdx = 0 To tplClearHdrCount - 1
+        If tplCatDispIdx < categoryMappings.Count Then
+            SheetTemplate.Cells(7, COL_CATEGORY_START + tplCatDispIdx).Value = tplCatHdrKeys(tplCatDispIdx)
+            SheetTemplate.Cells(8, COL_CATEGORY_START + tplCatDispIdx).Value = tplCatHdrVals(tplCatDispIdx)
+        Else
+            SheetTemplate.Cells(7, COL_CATEGORY_START + tplCatDispIdx).Value = ""
+            SheetTemplate.Cells(8, COL_CATEGORY_START + tplCatDispIdx).Value = ""
+        End If
+    Next tplCatDispIdx
+    ' 行14（SUMIF開始列〜）のエイリアスヘッダーを書き換える
+    Dim tplClearSumifCount As Long
+    tplClearSumifCount = IIf(categoryMappings.Count > templateSumifCount, categoryMappings.Count, templateSumifCount)
+    Dim tplCatHdrIdx As Long
+    For tplCatHdrIdx = 0 To tplClearSumifCount - 1
+        If tplCatHdrIdx < categoryMappings.Count Then
+            SheetTemplate.Cells(DETAIL_START_ROW - 1, tplSumifStartCol + tplCatHdrIdx).Value = tplCatHdrKeys(tplCatHdrIdx)
+        Else
+            SheetTemplate.Cells(DETAIL_START_ROW - 1, tplSumifStartCol + tplCatHdrIdx).Value = ""
+        End If
+    Next tplCatHdrIdx
+End Sub

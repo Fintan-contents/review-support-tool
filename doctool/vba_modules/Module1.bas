@@ -1,4 +1,12 @@
 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+Option Explicit
+' ==========================================
+' シート名定数（P3-13: 日本語シート名定数化）
+' ==========================================
+Public Const SHEET_KIHON_SETTEI As String = "基本設定"
+Public Const SHEET_SHITEKI_MAPPING As String = "指摘分類マッピング設定"
+Public Const SHEET_KOMOKU_MAPPING As String = "項目マッピング設定"
+
 Dim re As Object
 
 '=====================================================
@@ -70,6 +78,26 @@ Public Sub OutputTimerLog(targetWorkbook As Workbook)
         perfSheet.Cells(i + 4, 3).Value = timerInterval(i)
     Next i
 End Sub
+'=====================================================
+' 共通関数: 正規表現パターン初期化（H-03対応）
+' 対象ブック名フィルタ用の正規表現オブジェクトを初期化する
+' 引数: targetPat   - 対象ブック名パターン（ByRef出力）
+'       noTargetPat - 除外ブック名パターン（ByRef出力）
+'=====================================================
+Public Sub InitRegexPatterns(ByRef targetPat As Object, ByRef noTargetPat As Object)
+    Set targetPat = CreateObject("VBScript.RegExp")
+    With targetPat
+        .Pattern = ThisWorkbook.Worksheets(SHEET_KIHON_SETTEI).Range("B4").Value
+        .IgnoreCase = False
+        .Global = True
+    End With
+    Set noTargetPat = CreateObject("VBScript.RegExp")
+    With noTargetPat
+        .Pattern = ThisWorkbook.Worksheets(SHEET_KIHON_SETTEI).Range("B5").Value
+        .IgnoreCase = False
+        .Global = True
+    End With
+End Sub
 Public Sub initializeModule1()
     If Not re Is Nothing Then
         Set re = Nothing
@@ -103,6 +131,7 @@ Public Function inStrCount(s As String, query As String) As Integer
 End Function
 Public Function repeat(s As String, cnt As Integer) As String
     Dim work As String
+    Dim i As Long
     work = ""
     For i = 1 To cnt
         work = work & s

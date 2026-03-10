@@ -1,4 +1,5 @@
-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+Option Explicit
 'testMode時のダイアログログ用変数
 Private dialogLog As String
 
@@ -27,19 +28,8 @@ End Sub
 
 Public Sub DelAllReviewComments_Click_Core(Optional testMode As Boolean = False)
     Dim targetBookNamePattern As Object
-    Set targetBookNamePattern = CreateObject("VBScript.RegExp")
-    With targetBookNamePattern
-        .Pattern = ThisWorkbook.Worksheets("基本設定").Range("B4").Value
-        .IgnoreCase = False
-        .Global = True
-    End With
     Dim noTargetBookNamePattern As Object
-    Set noTargetBookNamePattern = CreateObject("VBScript.RegExp")
-    With noTargetBookNamePattern
-        .Pattern = ThisWorkbook.Worksheets("基本設定").Range("B5").Value
-        .IgnoreCase = False
-        .Global = True
-    End With
+    Call InitRegexPatterns(targetBookNamePattern, noTargetBookNamePattern)
     Dim book As Workbook
     Dim s As Worksheet
     Dim cmnt As comment
@@ -48,7 +38,7 @@ Public Sub DelAllReviewComments_Click_Core(Optional testMode As Boolean = False)
     Dim category As String
     Dim categoryMappings As Object
     Set categoryMappings = CreateObject("Scripting.Dictionary")
-    With ThisWorkbook.Worksheets("指摘分類マッピング設定")
+    With ThisWorkbook.Worksheets(SHEET_SHITEKI_MAPPING)
         Dim cmRow As Long
         For cmRow = 2 To .Cells(Application.Rows.Count, 1).End(xlUp).Row
             Call categoryMappings.Add(.Cells(cmRow, 1).Value, .Cells(cmRow, 2).Value)
@@ -109,19 +99,8 @@ End Sub
 
 Public Sub DelAllReviewResultSheets_Click_Core(Optional testMode As Boolean = False)
     Dim targetBookNamePattern As Object
-    Set targetBookNamePattern = CreateObject("VBScript.RegExp")
-    With targetBookNamePattern
-        .Pattern = ThisWorkbook.Worksheets("基本設定").Range("B4").Value
-        .IgnoreCase = False
-        .Global = True
-    End With
     Dim noTargetBookNamePattern As Object
-    Set noTargetBookNamePattern = CreateObject("VBScript.RegExp")
-    With noTargetBookNamePattern
-        .Pattern = ThisWorkbook.Worksheets("基本設定").Range("B5").Value
-        .IgnoreCase = False
-        .Global = True
-    End With
+    Call InitRegexPatterns(targetBookNamePattern, noTargetBookNamePattern)
     Dim book As Workbook
     Dim s As Worksheet
     Dim fileCount As Integer
