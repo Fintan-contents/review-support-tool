@@ -1,8 +1,8 @@
-# scenario10: 削除機能
-# 観点:
-#   26: コメント削除ボタンで全レビューコメントが削除される
-#   27: レビュー結果シート削除ボタンで全レビュー結果シートが削除される
-#   28: 削除対象なしで通知メッセージが表示される
+viewpoint: "観点26-28: 削除機能（コメント削除・シート削除・削除対象なし通知）"
+instructions:
+  - "入力: S01 と同内容"
+  - "REVIEW_TIMES=1 で抽出実行 → コメント削除 → シート削除 の順に実行"
+  - "検証: 削除後にレビューコメントとレビュー結果シートが存在しないことを assert_no_sheets で確認"
 
 steps:
   - action: extract
@@ -10,7 +10,6 @@ steps:
   - action: delete_comments
   - action: delete_sheets
 
-# 削除後にシートが存在しないことを確認
 file_expectations:
   - pattern: ".*機能設計書.*"
     assert_no_sheets:

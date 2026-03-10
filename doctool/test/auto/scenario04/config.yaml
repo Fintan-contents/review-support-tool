@@ -1,7 +1,8 @@
-# scenario04: 連続実行（2回目・3回目）
-# 観点:
-#   09: 初回実行でレビュー結果シートが生成される
-#   23: 2回目以降でエラーなく続行し新規シートが生成される
+viewpoint: "観点09, 23: 連続実行（2回目・3回目）でエラーなく新規シートが生成される"
+instructions:
+  - "入力: S01 と同内容"
+  - "REVIEW_TIMES=1, 2, 3 の順に抽出を3回実行"
+  - "検証: 各回でレビュー結果シートが新規生成されることを Gold Master 比較で確認"
 
 steps:
   - action: extract
@@ -10,4 +11,3 @@ steps:
     review_times: 2
   - action: extract
     review_times: 3
-

@@ -53,33 +53,69 @@ run_tests.bat scenario07 scenario08
 
 ### config.yaml の書き方
 
-```yaml
-steps:
-  - action: extract          # VBA マクロ実行
-    review_times: 1          # REVIEW_TIMES 値
-    repeat: 2                # 同じ REVIEW_TIMES で複数回実行（オプション）
-  - action: delete_comments  # コメント削除
-  - action: delete_sheets    # シート削除
+自動・手動テストで共通のスキーマを使用する。
 
-# Gold Master 比較: デフォルトは _expected.xlsx が存在する全ファイルを全シート比較
-# どうしてもスキップしたいセルは excluded_cells で指定（例: 実施日時のように毎回変わるセル）
+#### 全キー一覧
+
+```yaml
+# ---------------------------------------------------------
+# 必須キー
+# ---------------------------------------------------------
+
+viewpoint: "観点XX: 検証する観点の説明"
+# ログ・テスト実行画面に表示される。自動・手動ともに必須。
+
+instructions:
+  - "手順1の説明"
+  - "手順2の説明"
+# 自動テスト: 入力条件・検証内容の説明
+# 手動テスト: ユーザーが実行する操作手順
+
+steps:
+  - action: extract          # 抽出マクロ(CmdGen_Click_Core)を実行
+    review_times: 1          # REVIEW_TIMES に設定する値（必須）
+    repeat: 2                # 同じ review_times で繰り返す回数（省略時: 1）
+  - action: delete_comments  # コメント削除マクロを実行
+  - action: delete_sheets    # レビュー結果シート削除マクロを実行
+
+# ---------------------------------------------------------
+# オプションキー
+# ---------------------------------------------------------
+
+mode: manual
+# 省略時は自動テスト（visible=False / testMode=True）
+# "manual" を指定すると手動テスト（visible=True / testMode=False）
+
+skip_open_files:
+  - ".*レビュー記録票.*"
+# Excel で開かずにスキップするファイルの正規表現パターン（Python re.fullmatch）
+# 例: 記録票が未開封の状態を再現する
+
 excluded_cells:
   - sheet: "レビュー結果1回目"
-    cells: ["E4"]            # 実施日時（毎回変わるため比較対象から除外）
+    cells: ["E4"]
+# Gold Master 比較から除外するセル
+# 例: 実施日時など毎回変わる値のセル
 
-# 特定ファイルを開かずにシミュレート（例: 記録票が未開封の状態）
-skip_open_files:
-  - ".*レビュー記録票.*"     # Python 正規表現でファイル名をマッチ
-
-# ファイルごとの個別アサーション（assert_no_sheets など）
-# 指定したパターンにマッチするファイルは Gold Master 比較の代わりにここで評価される
 file_expectations:
   - pattern: "サンプルA"     # ファイル名に re.search でマッチ
-    assert_no_sheets:        # 指定シートが存在しないことを確認
-      - "レビュー結果1回目"
+    assert_no_sheets:
+      - "レビュー結果1回目"  # 指定シートが存在しないことを確認
   - pattern: "サンプルB"
-    assert_no_sheets: []     # アサーションなし（Gold Master 比較も行わない）
+    assert_no_sheets: []     # アサーションなし（Gold Master 比較もスキップ）
+# 指定パターンにマッチするファイルは Gold Master 比較の代わりにここで評価される
+# 未指定ファイルは _expected.xlsx が存在すれば Gold Master 比較を実施
 ```
+
+#### 検証方式の選択ガイド
+
+| 状況 | 使う設定 |
+|------|---------|
+| 出力ファイル全体を検証したい | `_expected.xlsx` を配置（デフォルト Gold Master 比較） |
+| 特定セルを比較から除外したい | `excluded_cells` |
+| シートが存在しないことを確認したい | `file_expectations` + `assert_no_sheets` |
+| ファイルを Gold Master 比較もしたくない | `file_expectations` + `assert_no_sheets: []` |
+| ファイルを Excel で開かずに実行したい | `skip_open_files` |
 
 ### テスト対象範囲
 
