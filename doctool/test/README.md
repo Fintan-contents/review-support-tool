@@ -283,6 +283,34 @@ setup:
 
 ---
 
+## 削除済みフォルダの記録
+
+### test/ 直下の旧シナリオフォルダ（scenario01〜11）
+
+**削除日**: 2026-03-11
+**削除理由**: auto/ または manual/ への移行完了後の遺物。config.yaml は auto/manual 側にのみ存在し、test/直下の xlsx ファイルは不要となった。
+
+| 削除フォルダ | 移行先 |
+|-------------|--------|
+| test/scenario01/ | auto/scenario01/ |
+| test/scenario02/ | auto/scenario02/ |
+| test/scenario03/ | auto/scenario03/ |
+| test/scenario04/ | auto/scenario04/ |
+| test/scenario05/ | manual/scenario05/ |
+| test/scenario06/ | manual/scenario06/ |
+| test/scenario07/ | auto/scenario07/ |
+| test/scenario08/ | auto/scenario08/ |
+| test/scenario09/ | auto/scenario09/ |
+| test/scenario10/ | auto/scenario10/ |
+| test/scenario11/ | auto/scenario11/ |
+
+### test/ 直下の未移行フォルダ（scenario12〜13）
+
+**削除日**: 2026-03-11
+**削除理由**: config.yaml・_expected.xlsx が存在せず、コメント内容が scenario01 と同一（観点の重複）。テスト観点が特定できず、auto/manual どちらにも分類不可能な廃止ファイルと判断。doctool 総点検レポート（H-04）にて「未移行・未文書化」として指摘。
+
+---
+
 ## テスト実施手順
 
 1. Windows 環境で `Excel設計書レビュー指摘事項抽出ツール.xlsm` を開く

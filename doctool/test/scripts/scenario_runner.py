@@ -7,10 +7,20 @@ config.yaml の mode キーで実行モードを自動判定:
   - それ以外    → visible=False, testMode=True（自動実行）
 """
 import gc
+import logging
 import re
 import shutil
+import sys
 import time
 from pathlib import Path
+
+logging.basicConfig(
+    level=logging.DEBUG,
+    format="%(levelname)s %(message)s",
+    stream=sys.stdout,
+    force=True,
+)
+logger = logging.getLogger(__name__)
 
 import openpyxl
 import xlwings as xw
@@ -74,7 +84,7 @@ def run_scenario(scenario_src_dir: Path) -> tuple[Path, dict]:
     ]
     skipped = [f.name for f in all_input_files if f not in open_files]
     if skipped:
-        print(f"[{scenario_name}] skip_open_files により除外: {skipped}")
+        logger.info("[%s] skip_open_files により除外: %s", scenario_name, skipped)
 
     _execute_vba(scenario_name, xlsm_dest, open_files, config, visible, test_mode, work_dir)
     return work_dir, config
@@ -125,7 +135,7 @@ def evaluate_scenario(work_dir: Path, scenario_src_dir: Path, config: dict) -> l
                     f"存在してはいけませんが存在します"
                 )
             else:
-                print(f"  ✓ [{actual_path.name}] '{sheet_name}' が存在しない - OK")
+                logger.info("  ✓ [%s] '%s' が存在しない - OK", actual_path.name, sheet_name)
             wb.close()
             assertion_count += 1
 
@@ -140,7 +150,7 @@ def evaluate_scenario(work_dir: Path, scenario_src_dir: Path, config: dict) -> l
 
         expected_path = scenario_src_dir / f"{actual_path.stem}_expected{actual_path.suffix}"
         if not expected_path.exists():
-            print(f"  - [{actual_path.name}] Gold Master なし → スキップ")
+            logger.info("  - [%s] Gold Master なし → スキップ", actual_path.name)
             continue
 
         result = compare_workbooks(
@@ -150,7 +160,7 @@ def evaluate_scenario(work_dir: Path, scenario_src_dir: Path, config: dict) -> l
             max_diffs=20,
         )
         if result.matches:
-            print(f"  ✓ [{actual_path.name}] Gold Master 比較 - OK")
+            logger.info("  ✓ [%s] Gold Master 比較 - OK", actual_path.name)
         else:
             errors.append(
                 f"[{actual_path.name}] Gold Master 比較 FAILED:\n" +
@@ -187,15 +197,15 @@ def _execute_vba(
     xlsm_wb = None
 
     try:
-        print(f"[{scenario_name}] Excel を起動中... (visible={visible})")
+        logger.info("[%s] Excel を起動中... (visible=%s)", scenario_name, visible)
         app = xw.App(visible=visible)
 
         for f in open_files:
-            print(f"[{scenario_name}] ファイルを開く: {f.name}")
+            logger.info("[%s] ファイルを開く: %s", scenario_name, f.name)
             wb = app.books.open(str(f))
             open_wbs.append((f.name, wb))
 
-        print(f"[{scenario_name}] xlsm を開く...")
+        logger.info("[%s] xlsm を開く...", scenario_name)
         xlsm_wb = app.books.open(str(xlsm_dest))
 
         # setup キーによる xlsm 事前設定
@@ -204,14 +214,14 @@ def _execute_vba(
             settings_ws = xlsm_wb.sheets["基本設定"]
             if "use_review_record" in setup:
                 settings_ws["B2"].value = setup["use_review_record"]
-                print(f"[{scenario_name}] setup: use_review_record={setup['use_review_record']}")
+                logger.debug("[%s] setup: use_review_record=%s", scenario_name, setup['use_review_record'])
             if "use_summary" in setup:
                 settings_ws["B3"].value = setup["use_summary"]
-                print(f"[{scenario_name}] setup: use_summary={setup['use_summary']}")
+                logger.debug("[%s] setup: use_summary=%s", scenario_name, setup['use_summary'])
             if "review_list_file" in setup:
                 review_list_path = work_dir / setup["review_list_file"]
                 xlsm_wb.names["REVIEW_LIST_FILEPATH"].refers_to_range.value = str(review_list_path)
-                print(f"[{scenario_name}] setup: REVIEW_LIST_FILEPATH={review_list_path}")
+                logger.debug("[%s] setup: REVIEW_LIST_FILEPATH=%s", scenario_name, review_list_path)
 
         macro = xlsm_wb.macro("Sheet1.CmdGen_Click_Core")
 
@@ -222,39 +232,39 @@ def _execute_vba(
             if action == "extract":
                 review_times = step["review_times"]
                 repeat = step.get("repeat", 1)
-                print(
-                    f"[{scenario_name}] Step {step_idx}: extract"
-                    f" (REVIEW_TIMES={review_times}, repeat={repeat})"
+                logger.info(
+                    "[%s] Step %d: extract (REVIEW_TIMES=%s, repeat=%d)",
+                    scenario_name, step_idx, review_times, repeat,
                 )
                 for run_num in range(repeat):
                     xlsm_wb.names["REVIEW_TIMES"].refers_to_range.value = review_times
-                    print(f"[{scenario_name}]   マクロ実行中 (run {run_num + 1}/{repeat})...")
+                    logger.info("[%s]   マクロ実行中 (run %d/%d)...", scenario_name, run_num + 1, repeat)
                     macro(test_mode)
 
             elif action == "delete_comments":
-                print(f"[{scenario_name}] Step {step_idx}: delete_comments")
+                logger.info("[%s] Step %d: delete_comments", scenario_name, step_idx)
                 _run_delete_macro(
                     scenario_name, xlsm_wb,
                     "Module2.DelAllReviewComments_Click_Core", test_mode,
                 )
 
             elif action == "delete_sheets":
-                print(f"[{scenario_name}] Step {step_idx}: delete_sheets")
+                logger.info("[%s] Step %d: delete_sheets", scenario_name, step_idx)
                 _run_delete_macro(
                     scenario_name, xlsm_wb,
                     "Module2.DelAllReviewResultSheets_Click_Core", test_mode,
                 )
 
-        print(f"[{scenario_name}] 全ステップ完了")
+        logger.info("[%s] 全ステップ完了", scenario_name)
 
-        print(f"[{scenario_name}] ファイルを保存中...")
+        logger.info("[%s] ファイルを保存中...", scenario_name)
         for _, wb in open_wbs:
             try:
                 wb.save()
             except Exception as e:
-                print(f"[{scenario_name}]   保存警告: {e}")
+                logger.warning("[%s]   保存警告: %s", scenario_name, e)
         xlsm_wb.save()
-        print(f"[{scenario_name}] Saved → temp_dir/{scenario_name}/")
+        logger.info("[%s] Saved → temp_dir/%s/", scenario_name, scenario_name)
 
     except Exception as e:
         raise RuntimeError(f"[{scenario_name}] VBA 実行エラー: {e}") from e
@@ -276,9 +286,9 @@ def _run_delete_macro(
         dialog_log = xlsm_wb.macro("Module2.GetDialogLog")()
         if dialog_log:
             for line in dialog_log.split("\n"):
-                print(f"[{scenario_name}]     {line}")
+                logger.info("[%s]     %s", scenario_name, line)
     except Exception as e:
-        print(f"[{scenario_name}]   Warning: {e}")
+        logger.warning("[%s]   Warning: %s", scenario_name, e)
 
 
 def _cleanup_excel(
@@ -325,10 +335,10 @@ def _cleanup_excel(
                 p.name().lower() == "excel.exe"
                 for p in psutil.process_iter(["name"])
             ):
-                print(f"[{scenario_name}] Excel 終了確認 ({i + 1}s)")
+                logger.debug("[%s] Excel 終了確認 (%ds)", scenario_name, i + 1)
                 break
             time.sleep(1)
         else:
-            print(f"[{scenario_name}] 警告: Excel が 10秒後も残留中")
+            logger.warning("[%s] 警告: Excel が 10秒後も残留中", scenario_name)
     except Exception:
         pass
