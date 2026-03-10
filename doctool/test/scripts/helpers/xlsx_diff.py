@@ -176,6 +176,17 @@ def compare_workbooks(
             diffs.append(f"... (差分数が{max_diffs}件を超えたため省略)")
             break
 
+    # sheets=None（全シート比較モード）のとき、
+    # actual にあって expected にない余分なシートを検出する
+    # （削除されるべきシートが残存している場合を捕捉）
+    if sheets is None and len(diffs) < max_diffs:
+        extra = [s for s in actual.sheetnames if s not in expected.sheetnames]
+        for sheet_name in extra:
+            diffs.append(f"Sheet '{sheet_name}' exists in actual but not in expected")
+            if len(diffs) >= max_diffs:
+                diffs.append(f"... (差分数が{max_diffs}件を超えたため省略)")
+                break
+
     return DiffResult(matches=len(diffs) == 0, diffs=diffs)
 
 
