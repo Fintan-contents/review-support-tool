@@ -1,0 +1,21 @@
+viewpoint: "観点18: レビュー記録票が開いていない場合にその設計書がスキップされる"
+instructions:
+  - "入力: S01 と同内容（レビュー記録票はフォルダに存在するが Excel で開かない）"
+  - "REVIEW_TIMES=1 で抽出実行"
+  - "検証: 設計書がスキップされレビュー結果シートが生成されないことを assert_no_sheets で確認"
+
+# レビュー記録票はファイルとして存在するが Excel で開かないことで
+# 「レビュー記録票が開いていない」状態をシミュレートする
+skip_open_files:
+  - ".*レビュー記録票.*"
+
+steps:
+  - action: extract
+    review_times: 1
+
+file_expectations:
+  - pattern: ".*機能設計書.*"
+    assert_no_sheets:
+      - "レビュー結果1回目"
+  - pattern: ".*レビュー記録票.*"
+    assert_no_sheets: []  # 記録票は未開封のまま・Gold Master 比較不要

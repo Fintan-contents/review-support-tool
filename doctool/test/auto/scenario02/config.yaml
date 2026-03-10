@@ -1,0 +1,9 @@
+viewpoint: "観点02-06: コメント種別バリエーション"
+instructions:
+  - "入力: S01 の内容に加え、複数行コメント(E73)・改行なし(E74)・コロンなし(E75) を追加"
+  - "REVIEW_TIMES=1 で抽出実行"
+  - "検証: 複数行コメントは抽出され、形式不正コメントはスキップされることを Gold Master 比較で確認"
+
+steps:
+  - action: extract
+    review_times: 1

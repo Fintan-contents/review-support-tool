@@ -1,0 +1,25 @@
+# Test execution outputs（テスト後に actual ファイルを確認するための作業領域）
+# ディレクトリ自体は .gitkeep で管理、中身だけ除外
+temp_dir/*
+!temp_dir/.gitkeep
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+*.pytest_cache
+
+# Virtual environments
+venv/
+.venv/
+env/
+.env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~

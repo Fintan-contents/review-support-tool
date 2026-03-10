@@ -80,6 +80,11 @@ Private Sub CheckBox1_Click()
 End Sub
 '抽出ボタンクリック
 Private Sub CmdGen_Click()
+    'UIボタンから呼ばれる場合はtestMode=False
+    Call CmdGen_Click_Core(testMode:=False)
+End Sub
+
+Public Sub CmdGen_Click_Core(Optional testMode As Boolean = False)
     On Error GoTo ERROR
     Application.Cursor = xlWait
     Application.ScreenUpdating = False
@@ -269,10 +274,12 @@ Private Sub CmdGen_Click()
                     If reviewListBook.Saved = False Then
                         '一旦閉じて開きなおす
                         '保存確認
-                        If MsgBox("レビュー記録一覧を一旦閉じて開き直します。編集中の内容は保存されます。" & vbCrLf & "処理を続行してよろしいですか？", vbYesNo, vbInformation) = vbNo Then
-                            Application.ScreenUpdating = True
-                            Application.Cursor = xlDefault
-                            Exit Sub
+                        If Not testMode Then
+                            If MsgBox("レビュー記録一覧を一旦閉じて開き直します。編集中の内容は保存されます。" & vbCrLf & "処理を続行してよろしいですか？", vbYesNo, vbInformation) = vbNo Then
+                                Application.ScreenUpdating = True
+                                Application.Cursor = xlDefault
+                                Exit Sub
+                            End If
                         End If
                     End If
                     'ブックを保存して閉じる
@@ -682,14 +689,19 @@ Private Sub CmdGen_Click()
         'ファイル名に正規表現パターンマッチを行い対象ファイルを抽出
         If targetBookNamePattern.test(book.Name) And Not noTargetBookNamePattern.test(book.Name) Then
             '処理実施確認
-            res = MsgBox(book.Name & "のレビュー内容を抽出しますか？", vbYesNoCancel, 確認)
-            If res = vbCancel Then
-                MsgBox "以降の処理を中止します。" 'それまでの処理をキャンセルはできないので「以降の処理を中止」
-                Exit For
-            ElseIf res = vbNo Then
-                '処理スキップ
-                GoTo NEXTBOOK
+            If testMode Then
+                res = vbYes
             Else
+                res = MsgBox(book.Name & "のレビュー内容を抽出しますか？", vbYesNoCancel, 確認)
+                If res = vbCancel Then
+                    MsgBox "以降の処理を中止します。" 'それまでの処理をキャンセルはできないので「以降の処理を中止」
+                    Exit For
+                ElseIf res = vbNo Then
+                    '処理スキップ
+                    GoTo NEXTBOOK
+                End If
+            End If
+            If res = vbYes Then
                 '基本情報
                 target = Mid(book.Name, 1, InStrRev(book.Name, ".") - 1)
                 count = Range("REVIEW_TIMES").Value
@@ -706,7 +718,9 @@ Private Sub CmdGen_Click()
                         End If
                     Next bookTemp
                     If Not bookTempSelected Then
-                        MsgBox book.Name & " に対応するレビュー記録票が開いていません。", vbExclamation
+                        If Not testMode Then
+                            MsgBox book.Name & " に対応するレビュー記録票が開いていません。", vbExclamation
+                        End If
                         Application.ScreenUpdating = True
                         Application.Cursor = xlDefault
                         GoTo NEXTBOOK
@@ -1267,14 +1281,18 @@ Private Sub CmdGen_Click()
 NEXTBOOK:
     Next book
     Application.Cursor = xlDefault
-    If fileCount = 0 Then
-        MsgBox "レビュー対象文書が見つかりません。", vbExclamation, "エラー"
-    Else
-        MsgBox "レビュー結果の抽出が完了しました。" & vbCrLf & vbCrLf & "処理ファイル数:" & fileCount & "件", vbInformation
+    If Not testMode Then
+        If fileCount = 0 Then
+            MsgBox "レビュー対象文書が見つかりません。", vbExclamation, "エラー"
+        Else
+            MsgBox "レビュー結果の抽出が完了しました。" & vbCrLf & vbCrLf & "処理ファイル数:" & fileCount & "件", vbInformation
+        End If
     End If
     Exit Sub
 ERROR:
-    MsgBox "処理中にエラーが発生しました。" & Err.Number & vbCrLf & vbCrLf & Err.Description, vbError
+    If Not testMode Then
+        MsgBox "処理中にエラーが発生しました。" & Err.Number & vbCrLf & vbCrLf & Err.Description, vbError
+    End If
     Application.ScreenUpdating = True
     Application.Cursor = xlDefault
 End Sub

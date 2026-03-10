@@ -1,0 +1,10 @@
+viewpoint: "観点24: 同回数再実行時、確認ダイアログなしで既存シートが自動上書きされる"
+instructions:
+  - "入力: S01 と同内容"
+  - "REVIEW_TIMES=1 で2回連続実行"
+  - "検証: 2回目の実行で上書き確認ダイアログが表示されず結果シートが更新されることを Gold Master 比較で確認"
+
+steps:
+  - action: extract
+    review_times: 1
+    repeat: 2  # 同じREVIEW_TIMESで2回実行し、2回目に自動上書きを検証
