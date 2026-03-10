@@ -1,0 +1,5 @@
+# Windows Python 環境用
+# VBA抽出（oletools）と VBAビルド（pywin32）の両方を含む
+# インストール: pip install -r vba-text-based-dev/requirements-windows.txt
+oletools==0.60.2
+pywin32==311

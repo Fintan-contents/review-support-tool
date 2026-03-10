@@ -52,11 +52,11 @@ review-support-tool/
 
 ## 前提条件
 
-- Python 3.x
-- 必要なライブラリ：
+- Python 3.10 以上（Windows）
+- 必要なライブラリ（`requirements-windows.txt`）：
 
   ```cmd
-  pip install oletools==0.60.2 pywin32==311
+  pip install -r vba-text-based-dev\requirements-windows.txt
   ```
 
 インストール確認：
@@ -171,7 +171,7 @@ extract.bat ..\..\..\doctool\win-config.bat
 **解決策**:
 
 ```cmd
-pip install oletools==0.60.2
+pip install -r vba-text-based-dev\requirements-windows.txt
 ```
 
 ### pywin32が見つからない
@@ -181,7 +181,7 @@ pip install oletools==0.60.2
 **解決策**:
 
 ```cmd
-pip install pywin32==311
+pip install -r vba-text-based-dev\requirements-windows.txt
 ```
 
 ### xlsmファイルが壊れた
