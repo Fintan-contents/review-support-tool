@@ -4,6 +4,33 @@
 
 ---
 
+## セットアップ
+
+### 前提条件
+
+- Windows 環境（Excel が必要）
+- Python 3.10 以上
+- Microsoft Excel がインストールされていること
+
+### Python 依存パッケージのインストール
+
+```bat
+cd doctool\test
+pip install -r requirements.txt
+```
+
+依存パッケージ一覧（`requirements.txt`）:
+
+| パッケージ | 用途 |
+|-----------|------|
+| `openpyxl` | Gold Master 比較（xlsx 読み込み・コメント比較） |
+| `psutil` | テスト後の Excel プロセス終了確認 |
+| `pytest` | 自動テストランナー |
+| `pyyaml` | `config.yaml` の読み込み |
+| `xlwings` | Excel COM 経由での VBA 実行 |
+
+---
+
 ## テスト実行方法
 
 ### 自動テスト
