@@ -1,5 +1,5 @@
-# scenario08: レビュー記録票が開いていない
-# 観点: 14
+# scenario07: 日時コメント不正（要素不足）
+# 観点: 21
 
 steps:
   - action: extract

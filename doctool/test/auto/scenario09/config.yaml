@@ -1,11 +1,9 @@
-# scenario09: 削除機能
-# 観点: 22, 23, 24
+# scenario08: レビュー記録票が開いていない
+# 観点: 14
 
 steps:
   - action: extract
     review_times: 1
-  - action: delete_comments
-  - action: delete_sheets
 
-# 削除後は結果シートがないのでGold Master比較は不要
-result_sheets: []
+result_sheets:
+  - "レビュー結果1回目"
