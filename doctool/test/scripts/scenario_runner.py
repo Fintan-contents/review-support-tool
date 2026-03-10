@@ -99,6 +99,7 @@ def evaluate_scenario(work_dir: Path, scenario_src_dir: Path, config: dict) -> l
     excluded_cells = config.get("excluded_cells", [])
     errors = []
     evaluated_files = set()
+    assertion_count = 0  # 実施したアサーションの数（0件はテスト失敗）
 
     # file_expectations で指定されたファイルを処理
     for expectation in expectations:
@@ -115,6 +116,7 @@ def evaluate_scenario(work_dir: Path, scenario_src_dir: Path, config: dict) -> l
         evaluated_files.add(actual_path.name)
 
         # assert_no_sheets: 指定シートが存在しないことを確認
+        # 空リスト（assert_no_sheets: []）は意図的な「評価対象外」のためカウントしない
         for sheet_name in expectation.get("assert_no_sheets", []):
             wb = openpyxl.load_workbook(str(actual_path), data_only=True)
             if sheet_name in wb.sheetnames:
@@ -125,6 +127,7 @@ def evaluate_scenario(work_dir: Path, scenario_src_dir: Path, config: dict) -> l
             else:
                 print(f"  ✓ [{actual_path.name}] '{sheet_name}' が存在しない - OK")
             wb.close()
+            assertion_count += 1
 
     # デフォルト: _expected.xlsx が存在する全ファイルを全シート Gold Master 比較
     all_input = sorted(
@@ -153,6 +156,14 @@ def evaluate_scenario(work_dir: Path, scenario_src_dir: Path, config: dict) -> l
                 f"[{actual_path.name}] Gold Master 比較 FAILED:\n" +
                 "\n".join(f"  {d}" for d in result.diffs)
             )
+        assertion_count += 1
+
+    # アサーションが1件もない場合はテスト設定ミスとして失敗
+    if assertion_count == 0:
+        errors.append(
+            "アサーションが1件もありません。"
+            "_expected.xlsx を配置するか file_expectations でアサーションを設定してください。"
+        )
 
     return errors
 
