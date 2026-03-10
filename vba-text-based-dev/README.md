@@ -56,7 +56,7 @@ review-support-tool/
 - 必要なライブラリ：
 
   ```cmd
-  pip install oletools pywin32
+  pip install oletools==0.60.2 pywin32==311
   ```
 
 インストール確認：
@@ -171,7 +171,7 @@ extract.bat ..\..\..\doctool\win-config.bat
 **解決策**:
 
 ```cmd
-pip install oletools
+pip install oletools==0.60.2
 ```
 
 ### pywin32が見つからない
@@ -181,7 +181,7 @@ pip install oletools
 **解決策**:
 
 ```cmd
-pip install pywin32
+pip install pywin32==311
 ```
 
 ### xlsmファイルが壊れた
