@@ -1,9 +1,7 @@
 # scenario03: 複数日時コメント
-# 観点: 07
+# 観点:
+#   08: 複数の`*`コメントで最後に走査されたものが採用される
 
 steps:
   - action: extract
     review_times: 1
-
-result_sheets:
-  - "レビュー結果1回目"

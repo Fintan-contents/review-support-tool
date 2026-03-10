@@ -16,7 +16,8 @@ def load_scenario_config(scenario_dir: str) -> Dict[str, Any]:
         scenario_dir: Path to scenario directory containing config.yaml
         
     Returns:
-        Dictionary with 'steps' and 'result_sheets' keys
+        Dictionary with 'steps' and optional keys:
+        'skip_open_files', 'excluded_cells', 'file_expectations'
         
     Raises:
         FileNotFoundError: If config.yaml not found
@@ -35,10 +36,7 @@ def load_scenario_config(scenario_dir: str) -> Dict[str, Any]:
     
     if "steps" not in config:
         raise ValueError(f"Missing 'steps' in config.yaml for {scenario_dir}")
-    
-    if "result_sheets" not in config:
-        raise ValueError(f"Missing 'result_sheets' in config.yaml for {scenario_dir}")
-    
+
     return config
 
 

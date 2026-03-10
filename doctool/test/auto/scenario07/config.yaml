@@ -1,10 +1,9 @@
-# scenario06: 重複実行（自動上書き）
-# 観点: 20
+# scenario07: 重複実行（自動上書き）
+# 観点:
+#   24: 同回数再実行時、確認ダイアログなしで既存の結果シート・記録票行が自動的に上書きされる
 
 steps:
   - action: extract
     review_times: 1
     repeat: 2  # 同じREVIEW_TIMESで2回実行し、2回目に自動上書きを検証
 
-result_sheets:
-  - "レビュー結果1回目"

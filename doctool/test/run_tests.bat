@@ -1,25 +1,18 @@
 @echo off
-REM Excel VBA Test Runner
-REM Usage:
-REM   run_tests.bat           - Run all scenarios
-REM   run_tests.bat scenario04 - Run specific scenario
+REM Excel VBA Test Runner（自動テスト → 手動テストをまとめて実行）
+REM
+REM Actual output files are saved to: test\temp_dir\scenarioXX\
 
 cd /d %~dp0
 
-if "%1"=="" (
-    echo ====================================
-    echo Running all scenarios...
-    echo ====================================
-    python -m pytest scripts\test_runner.py -v --tb=short
-) else (
-    echo ====================================
-    echo Running scenario: %1
-    echo ====================================
-    python -m pytest scripts\test_runner.py::TestScenarioGoldMaster::test_scenario_gold_master[%1] -v --tb=short
-)
+echo ====================================
+echo Running all tests (auto + manual)...
+echo ====================================
+python scripts\test_runner.py
 
 echo.
 echo ====================================
-echo Test execution completed
+echo All tests completed
+echo Actual files saved to: temp_dir\
 echo ====================================
 pause

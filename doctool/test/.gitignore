@@ -1,5 +1,7 @@
-# Test execution outputs
-debug_output/
+# Test execution outputs（テスト後に actual ファイルを確認するための作業領域）
+# ディレクトリ自体は .gitkeep で管理、中身だけ除外
+temp_dir/*
+!temp_dir/.gitkeep
 
 # Python cache
 __pycache__/

@@ -1,9 +1,20 @@
-# scenario08: レビュー記録票が開いていない
-# 観点: 14
+# scenario09: レビュー記録票が開いていない
+# 観点:
+#   18: レビュー記録票が開いていない場合にその設計書がスキップされる
+
+# レビュー記録票はファイルとして存在するが、Excel で開かないことで
+# 「レビュー記録票が開いていない」状態をシミュレートする
+skip_open_files:
+  - ".*レビュー記録票.*"
 
 steps:
   - action: extract
     review_times: 1
 
-result_sheets:
-  - "レビュー結果1回目"
+# レビュー記録票が未開封のためスキップされることを確認
+file_expectations:
+  - pattern: ".*機能設計書.*"
+    assert_no_sheets:
+      - "レビュー結果1回目"
+  - pattern: ".*レビュー記録票.*"
+    assert_no_sheets: []  # 記録票は未開封のまま・Gold Master 比較不要

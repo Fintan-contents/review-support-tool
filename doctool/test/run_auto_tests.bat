@@ -1,8 +1,8 @@
 @echo off
-REM Excel VBA Manual Test Runner
+REM Excel VBA Auto Test Runner
 REM Usage:
-REM   run_manual_tests.bat                  - Run all manual scenarios
-REM   run_manual_tests.bat scenario05       - Run specific scenario
+REM   run_auto_tests.bat                  - Run all auto scenarios
+REM   run_auto_tests.bat scenario04       - Run specific scenario
 REM
 REM Actual output files are saved to: test\temp_dir\scenarioXX\
 
@@ -10,19 +10,19 @@ cd /d %~dp0
 
 if "%1"=="" (
     echo ====================================
-    echo Running all manual scenarios...
+    echo Running all auto scenarios...
     echo ====================================
-    python scripts\manual_test_runner.py
+    python -m pytest scripts\auto_test_runner.py -v --tb=short
 ) else (
     echo ====================================
     echo Running scenario: %1
     echo ====================================
-    python scripts\manual_test_runner.py %1
+    python -m pytest scripts\auto_test_runner.py::TestScenarioGoldMaster::test_scenario_gold_master[%1] -v --tb=short
 )
 
 echo.
 echo ====================================
-echo Manual test completed
+echo Auto test completed
 echo Actual files saved to: temp_dir\
 echo ====================================
 pause
