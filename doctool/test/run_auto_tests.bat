@@ -17,7 +17,7 @@ goto run_multi
 echo ====================================
 echo Running all auto scenarios...
 echo ====================================
-python -m pytest scripts\auto_test_runner.py -v --tb=short
+python -m pytest scripts\auto_test_runner.py -v --tb=short -s
 goto end
 
 :run_single
@@ -39,7 +39,7 @@ goto build_filter
 echo ====================================
 echo Running scenarios: %FILTER%
 echo ====================================
-python -m pytest scripts\auto_test_runner.py -v --tb=short -k "%FILTER%"
+python -m pytest scripts\auto_test_runner.py -v --tb=short -s -k "%FILTER%"
 
 :end
 echo.

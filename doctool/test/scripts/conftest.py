@@ -1,7 +1,15 @@
 """pytest共通設定とフィクスチャ定義"""
+import sys
 import pytest
 import psutil
 from pathlib import Path
+
+from helpers.tee_logger import Tee
+
+
+TEMP_DIR = Path(__file__).parent.parent / "temp_dir"
+
+_session_log_file = None
 
 
 def kill_excel_processes():
@@ -20,7 +28,6 @@ def kill_excel_processes():
 
 def pytest_configure(config):
     """pytest設定"""
-    # カスタムマーカーの登録
     config.addinivalue_line(
         "markers", "slow: marks tests as slow (deselect with '-m \"not slow\"')"
     )
@@ -29,7 +36,22 @@ def pytest_configure(config):
     )
 
 
+def pytest_sessionstart(session):
+    """テストセッション開始時にセッションログを設定"""
+    global _session_log_file
+    TEMP_DIR.mkdir(parents=True, exist_ok=True)
+    log_path = TEMP_DIR / "test_result.log"
+    _session_log_file = open(log_path, "w", encoding="utf-8")
+    sys.stdout = Tee(sys.stdout, _session_log_file)
+    print(f"Session log: {log_path}")
+
+
 def pytest_sessionfinish(session, exitstatus):
     """全テスト終了時のクリーンアップ"""
-    # 念のため残存Excelプロセスをクリーンアップ
+    global _session_log_file
     kill_excel_processes()
+    if _session_log_file:
+        if isinstance(sys.stdout, Tee):
+            sys.stdout = sys.stdout._console
+        _session_log_file.close()
+        _session_log_file = None

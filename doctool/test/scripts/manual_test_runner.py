@@ -12,7 +12,8 @@ import sys
 from pathlib import Path
 
 from helpers.config_loader import load_scenario_config
-from scenario_runner import run_scenario, evaluate_scenario
+from helpers.tee_logger import tee_to_file
+from scenario_runner import run_scenario, evaluate_scenario, TEMP_DIR
 
 
 MANUAL_BASE = Path(__file__).parent.parent / "manual"
@@ -46,6 +47,12 @@ def _print_scenario_header(scenario_name: str, config: dict):
 
 def run_manual_tests(filter_names: list[str] = None):
     """手動テストを順次実行する"""
+    session_log = TEMP_DIR / "test_result.log"
+    with tee_to_file(session_log):
+        _run_manual_tests_inner(filter_names)
+
+
+def _run_manual_tests_inner(filter_names: list[str] = None):
     scenarios = discover_manual_scenarios(filter_names)
 
     if not scenarios:
@@ -62,7 +69,9 @@ def run_manual_tests(filter_names: list[str] = None):
     for s in scenarios:
         cfg = load_scenario_config(str(s))
         print(f"  - {s.name}: {cfg.get('viewpoint', '')}")
-    print("実行後のファイルは temp_dir/ に保存されます")
+    print(f"実行後のファイルは temp_dir/ に保存されます")
+    print(f"セッションログ: {TEMP_DIR / 'test_result.log'}")
+    print(f"シナリオログ: {TEMP_DIR}/<scenario_name>_test.log")
     _print_sep()
 
     results = []
@@ -74,22 +83,24 @@ def run_manual_tests(filter_names: list[str] = None):
         _print_scenario_header(scenario_name, config)
         input("準備ができたら Enter を押してください...")
 
-        try:
-            work_dir, config = run_scenario(scenario_src_dir)
-            errors = evaluate_scenario(work_dir, scenario_src_dir, config)
+        scenario_log = TEMP_DIR / f"{scenario_name}_test.log"
+        with tee_to_file(scenario_log):
+            try:
+                work_dir, config = run_scenario(scenario_src_dir)
+                errors = evaluate_scenario(work_dir, scenario_src_dir, config)
 
-            if errors:
-                print(f"\n[{scenario_name}] ✗ FAIL")
-                for e in errors:
-                    print(f"  {e}")
+                if errors:
+                    print(f"\n[{scenario_name}] FAIL")
+                    for e in errors:
+                        print(f"  {e}")
+                    results.append((scenario_name, False))
+                else:
+                    print(f"\n[{scenario_name}] PASS")
+                    results.append((scenario_name, True))
+
+            except Exception as e:
+                print(f"\n[{scenario_name}] ERROR: {e}")
                 results.append((scenario_name, False))
-            else:
-                print(f"\n[{scenario_name}] ✓ PASS")
-                results.append((scenario_name, True))
-
-        except Exception as e:
-            print(f"\n[{scenario_name}] ✗ ERROR: {e}")
-            results.append((scenario_name, False))
 
         if i < len(scenarios) - 1:
             print()
@@ -101,7 +112,7 @@ def run_manual_tests(filter_names: list[str] = None):
     print("テスト結果サマリー")
     _print_sep()
     for name, passed in results:
-        status = "✓ PASS" if passed else "✗ FAIL"
+        status = "PASS" if passed else "FAIL"
         print(f"  {status}: {name}")
     passed_count = sum(1 for _, p in results if p)
     print(f"\n合計: {passed_count}/{len(results)} PASS")

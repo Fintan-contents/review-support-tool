@@ -24,7 +24,7 @@ def main():
     auto_cmd = [
         sys.executable, "-m", "pytest",
         str(SCRIPTS_DIR / "auto_test_runner.py"),
-        "-v", "--tb=short",
+        "-v", "--tb=short", "-s",
     ]
     if filters:
         auto_cmd += ["-k", " or ".join(filters)]

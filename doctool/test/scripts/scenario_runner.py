@@ -259,22 +259,35 @@ def _cleanup_excel(
     open_wbs: list,
     xlsm_wb,
 ) -> None:
-    """Excel プロセスをクリーンアップする。"""
+    """Excel プロセスをクリーンアップする。
+
+    COM オブジェクトへの参照を明示的に None で破棄してから app.quit() を呼ぶ。
+    参照を残したまま quit すると GC 時に死んだサーバーへ接続しようとして
+    'Windows fatal exception: code 0x800706ba' (RPC_S_SERVER_UNAVAILABLE) が発生する。
+    """
     for _, wb in open_wbs:
         try:
             wb.close()
         except Exception:
             pass
+    open_wbs.clear()
+
     if xlsm_wb:
         try:
             xlsm_wb.close()
         except Exception:
             pass
+        xlsm_wb = None  # noqa: F841 — COM参照を明示破棄
+
+    gc.collect()  # close後・quit前にCOM参照を解放
+
     if app:
         try:
             app.quit()
         except Exception:
             pass
+        app = None  # noqa: F841
+
     gc.collect()
 
     try:
