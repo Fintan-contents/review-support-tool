@@ -130,7 +130,7 @@ def compare_workbooks(
                 f"actual={aws.max_column}, expected={ews.max_column}"
             )
 
-        # セル値の完全一致比較
+        # セル値・コメントの完全一致比較
         max_row = max(aws.max_row or 0, ews.max_row or 0)
         max_col = max(aws.max_column or 0, ews.max_column or 0)
 
@@ -150,6 +150,22 @@ def compare_workbooks(
                     ev_str = str(ev)[:50] + "..." if ev and len(str(ev)) > 50 else str(ev)
                     diffs.append(
                         f"[{sheet_name}!{cell_ref}] actual='{av_str}' != expected='{ev_str}'"
+                    )
+
+                    if len(diffs) >= max_diffs:
+                        diffs.append(f"... (差分数が{max_diffs}件を超えたため省略)")
+                        return DiffResult(matches=False, diffs=diffs)
+
+                # コメント（メモ）の比較
+                ac = aws.cell(row, col).comment
+                ec = ews.cell(row, col).comment
+                ac_text = ac.text.strip() if ac else None
+                ec_text = ec.text.strip() if ec else None
+                if ac_text != ec_text:
+                    ac_repr = repr(ac_text[:50] + "...") if ac_text and len(ac_text) > 50 else repr(ac_text)
+                    ec_repr = repr(ec_text[:50] + "...") if ec_text and len(ec_text) > 50 else repr(ec_text)
+                    diffs.append(
+                        f"[{sheet_name}!{cell_ref}] comment: actual={ac_repr} != expected={ec_repr}"
                     )
 
                     if len(diffs) >= max_diffs:
