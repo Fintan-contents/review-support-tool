@@ -15,6 +15,9 @@ run_auto_tests.bat
 
 # 特定シナリオのみ実行
 run_auto_tests.bat scenario04
+
+# 複数シナリオを指定して実行
+run_auto_tests.bat scenario07 scenario08 scenario09
 ```
 
 ### 手動テスト
