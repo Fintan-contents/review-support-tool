@@ -132,6 +132,13 @@ file_expectations:
     assert_no_sheets: []     # アサーションなし（Gold Master 比較もスキップ）
 # 指定パターンにマッチするファイルは Gold Master 比較の代わりにここで評価される
 # 未指定ファイルは _expected.xlsx が存在すれば Gold Master 比較を実施
+
+setup:
+  use_review_record: true   # 基本設定 B2（レビュー記録票使用）を上書き（省略時は xlsm 初期値）
+  use_summary: true         # 基本設定 B3（レビュー記録サマリ使用）を上書き（省略時は xlsm 初期値）
+  review_list_file: "レビュー記録一覧.xlsx"
+  # REVIEW_LIST_FILEPATH 名前付き範囲を work_dir 内ファイルの絶対パスで自動設定
+  # レビュー記録サマリ使用時は use_summary: true と併せて指定する
 ```
 
 #### 検証方式の選択ガイド
@@ -143,12 +150,13 @@ file_expectations:
 | シートが存在しないことを確認したい | `file_expectations` + `assert_no_sheets` |
 | ファイルを Gold Master 比較もしたくない | `file_expectations` + `assert_no_sheets: []` |
 | ファイルを Excel で開かずに実行したい | `skip_open_files` |
+| xlsm の基本設定を上書きしたい（サマリー等） | `setup` |
 
 ### テスト対象範囲
 
 | テスト方法 | 対象観点 | 備考 |
 |----------|---------|-----|
-| 自動テスト（`auto/`） | 01〜20, 23〜28 | Gold Master 比較＋ダイアログログ検証 |
+| 自動テスト（`auto/`） | 01〜20, 23〜29 | Gold Master 比較＋ダイアログログ検証 |
 | 手動テスト（`manual/`） | 21〜22 | ダイアログの「いいえ」「キャンセル」動作 |
 
 **注**: 観点 21, 22（抽出前確認ダイアログの「いいえ」「キャンセル」動作）は、ユーザー選択による分岐が必要なため手動テストで実施。
@@ -231,6 +239,12 @@ file_expectations:
 | 27 | レビュー結果シート削除ボタンで全レビュー結果シートが削除される | S10 |
 | 28 | 削除対象なしで通知メッセージが表示される | S10 |
 
+### レビュー記録サマリ
+
+| ID | 観点 | 対応シナリオ |
+|----|------|------------|
+| 29 | レビュー記録サマリ使用時、レビュー回数・日付・開始/終了時刻・レビュー時間等がレビュー記録一覧に正しく転記される | S11 |
+
 ---
 
 ## シナリオ一覧
@@ -247,6 +261,7 @@ file_expectations:
 | S08 | 日時コメント不正（要素不足） | `auto/scenario08/` | 25 | 自動 |
 | S09 | レビュー記録票が開いていない | `auto/scenario09/` | 18 | 自動 |
 | S10 | 削除機能 | `auto/scenario10/` | 26〜28 | 自動 |
+| S11 | レビュー記録サマリ使用 | `auto/scenario11/` | 29 | 自動 |
 
 ---
 
@@ -264,6 +279,7 @@ file_expectations:
 | scenario08/ | `*`不正(A4: 実施日・開始のみ), a(B5), b(E60), c(E62) | 日時コメント要素不足 |
 | scenario09/ | scenario01 と同じ | 記録票は配置するが Excel で開かない |
 | scenario10/ | scenario01 と同じ | 削除機能検証用 |
+| scenario11/ | scenario01 と同じ | レビュー記録サマリ検証用（レビュー記録一覧ファイルを追加配置） |
 
 ---
 
@@ -538,9 +554,9 @@ test/
 ├── run_manual_tests.bat   # 手動テスト実行
 ├── run_tests.bat          # 自動テスト → 手動テストをまとめて実行
 ├── auto/                  # 自動テストシナリオ（testMode=True）
-│   ├── scenarioXX/        # 各シナリオフォルダ（scenario01〜scenario10）
+│   ├── scenarioXX/        # 各シナリオフォルダ（scenario01〜scenario11）
 │   │   ├── config.yaml           # テスト手順・観点定義
-│   │   ├── *.xlsx                # 入力フィクスチャ（設計書・記録票）
+│   │   ├── *.xlsx                # 入力フィクスチャ（設計書・記録票・レビュー記録一覧等）
 │   │   └── *_expected.xlsx       # Gold Master（期待出力）
 │   └── ...
 ├── manual/                # 手動テストシナリオ（visible=True, testMode=False）
@@ -580,6 +596,16 @@ $ python -m pytest scripts\auto_test_runner.py -v
 - auto/scenario04: 連続実行（REVIEW_TIMES=1,2,3 で3回実行）
 - auto/scenario07: 重複実行（REVIEW_TIMES=1 のまま2回実行）
 - auto/scenario10: 削除テスト（抽出→コメント削除→シート削除）
+- auto/scenario11: レビュー記録サマリ使用（setup キーで B3=TRUE・REVIEW_LIST_FILEPATH を動的設定）
+
+### scenario11 の Gold Master 作成手順
+
+`auto/scenario11/` のフィクスチャと expected ファイルは Windows 環境での作成が必要:
+
+1. `レビュー記録一覧_S11.xlsx` を配置（レビュー記録一覧のテンプレートファイルを用意）
+2. 設計書・記録票は scenario01 から S11 にリネームしてコピー
+3. `run_auto_tests.bat scenario11` を実行（初回は `_expected` なしで動作確認）
+4. 生成された `temp_dir/scenario11/` 内ファイルを `_expected.xlsx` としてコピーして配置
 
 ### 手動テストの Gold Master について
 

@@ -76,7 +76,7 @@ def run_scenario(scenario_src_dir: Path) -> tuple[Path, dict]:
     if skipped:
         print(f"[{scenario_name}] skip_open_files により除外: {skipped}")
 
-    _execute_vba(scenario_name, xlsm_dest, open_files, config, visible, test_mode)
+    _execute_vba(scenario_name, xlsm_dest, open_files, config, visible, test_mode, work_dir)
     return work_dir, config
 
 
@@ -179,6 +179,7 @@ def _execute_vba(
     config: dict,
     visible: bool,
     test_mode: bool,
+    work_dir: Path,
 ) -> None:
     """VBA マクロを実行する。"""
     app = None
@@ -196,6 +197,22 @@ def _execute_vba(
 
         print(f"[{scenario_name}] xlsm を開く...")
         xlsm_wb = app.books.open(str(xlsm_dest))
+
+        # setup キーによる xlsm 事前設定
+        setup = config.get("setup", {})
+        if setup:
+            settings_ws = xlsm_wb.sheets["基本設定"]
+            if "use_review_record" in setup:
+                settings_ws["B2"].value = setup["use_review_record"]
+                print(f"[{scenario_name}] setup: use_review_record={setup['use_review_record']}")
+            if "use_summary" in setup:
+                settings_ws["B3"].value = setup["use_summary"]
+                print(f"[{scenario_name}] setup: use_summary={setup['use_summary']}")
+            if "review_list_file" in setup:
+                review_list_path = work_dir / setup["review_list_file"]
+                xlsm_wb.names["REVIEW_LIST_FILEPATH"].refers_to_range.value = str(review_list_path)
+                print(f"[{scenario_name}] setup: REVIEW_LIST_FILEPATH={review_list_path}")
+
         macro = xlsm_wb.macro("Sheet1.CmdGen_Click_Core")
 
         for step_idx, step in enumerate(config["steps"], 1):
