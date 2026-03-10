@@ -12,7 +12,7 @@ import sys
 from pathlib import Path
 
 from helpers.config_loader import load_scenario_config
-from helpers.tee_logger import tee_to_file, start_session_log, is_current_session, session_header
+from helpers.tee_logger import tee_to_file, start_session_log, session_header
 from scenario_runner import run_scenario, evaluate_scenario, TEMP_DIR
 
 
@@ -48,16 +48,9 @@ def _print_scenario_header(scenario_name: str, config: dict):
 def run_manual_tests(filter_names: list[str] = None):
     """手動テストを順次実行する"""
     session_log = TEMP_DIR / "test_result.log"
-    if is_current_session(session_log):
-        # 同一セッション（autoテストが作成したログに追記）
-        mode = "a"
-    else:
-        # 単独実行 or 別セッション: 既存ログをバックアップして新規作成
-        start_session_log(session_log)
-        mode = "w"
-    with tee_to_file(session_log, mode=mode):
-        if mode == "w":
-            print(session_header())
+    start_session_log(session_log)  # 既存ログをバックアップ
+    with tee_to_file(session_log):
+        print(session_header())
         _run_manual_tests_inner(filter_names)
 
 
