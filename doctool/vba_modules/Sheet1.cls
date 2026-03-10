@@ -342,7 +342,9 @@ Public Sub CmdGen_Click_Core(Optional testMode As Boolean = False)
                         End If
                     Next bookTemp
                     If Not bookTempSelected Then
-                        MsgBox book.Name & " に対応するレビュー記録票が開いていません。", vbExclamation
+                        If Not testMode Then
+                            MsgBox book.Name & " に対応するレビュー記録票が開いていません。", vbExclamation
+                        End If
                         Application.ScreenUpdating = True
                         Application.Cursor = xlDefault
                         GoTo NEXTBOOK
