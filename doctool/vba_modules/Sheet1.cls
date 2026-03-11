@@ -517,6 +517,15 @@ Public Sub CmdGen_Click_Core(Optional testMode As Boolean = False)
             ' 列幅は PasteSpecial でコピーされないため、コピー元の列幅を明示的に設定する
             SheetTemplate.Columns(rightmostBK + 1).ColumnWidth = SheetTemplate.Columns(rightmostBK).ColumnWidth
         Next bkInsertIdx
+        ' BKループの Insert 操作により、行15:16 の CF（対応状況="済" 判定）の
+        ' AppliesTo 範囲が K 列を超えて拡張される場合がある（Excel の自動拡張）。
+        ' 対応状況列（K列）は固定のため、CF 範囲を A15:K16 に明示的に縮小して正しい状態を保証する。
+        If SheetTemplate.Cells(DETAIL_START_ROW, 1).FormatConditions.Count > 0 Then
+            SheetTemplate.Cells(DETAIL_START_ROW, 1).FormatConditions(1).ModifyAppliesToRange _
+                SheetTemplate.Range( _
+                    SheetTemplate.Cells(DETAIL_START_ROW, 1), _
+                    SheetTemplate.Cells(DETAIL_START_ROW + 1, COL_CATEGORY_HEADER_START - 1))
+        End If
     ElseIf catColDiff < 0 Then
         ' 行7〜11（B-K範囲）: 右端カテゴリ列を削除（左シフト）
         ' 部分行削除では列幅がシフトしないため、削除後の計列の列幅を明示的に設定する
@@ -631,6 +640,33 @@ Public Sub CmdGen_Click_Core(Optional testMode As Boolean = False)
                                  SheetTemplate.Cells(DETAIL_START_ROW + 1, rightmostLT)).Delete Shift:=xlShiftToLeft
         Next ltInsertIdx
     End If
+    ' [Bug Fix] catColDiff > 0 で追加した新カテゴリ列（行9/10）の SUMIF sum_range 列参照を修正する
+    ' BKループ時点では対応する SUMIF フラグ列がまだ存在しないため、BK ループが生成する相対列参照は
+    ' 「本来の SUMIF 列位置」を指す。しかし後続の sumifColDiff ループが同列に Insert を実行するたびに
+    ' 参照が +1 ずつズレ、最終的にヘルパー列等の誤列を参照してしまう。
+    ' sumifColDiff 処理完了後に正しい SUMIF フラグ列アドレスで上書きして修正する。
+    If catColDiff > 0 Then
+        Dim fixCatIdx As Long
+        Dim fixCatCol As Long
+        Dim fixSumifCol As Long
+        Dim fixRow As Long
+        Dim fixColAddr As String
+        For fixCatIdx = templateCatCount To categoryMappings.Count - 1
+            fixCatCol = COL_CATEGORY_START + fixCatIdx
+            fixSumifCol = tplSumifStartCol + fixCatIdx
+            ' 列番号から列文字を取得（例: 24 → "X"、27 → "AA"）
+            ' Cells(1, col).Address(False, False) = "X1" → 末尾の "1" を除去して列文字だけ取り出す
+            fixColAddr = Left(SheetTemplate.Cells(1, fixSumifCol).Address(False, False), _
+                              Len(SheetTemplate.Cells(1, fixSumifCol).Address(False, False)) - 1)
+            For fixRow = ROW_CATEGORY - 1 To ROW_CATEGORY  ' 行9（未件数）・行10（済件数）
+                SheetTemplate.Cells(fixRow, fixCatCol).Formula = _
+                    "=IF(SUMIF($K15:$K16,$A" & fixRow & "," & _
+                    fixColAddr & "15:" & fixColAddr & "16)=0," & _
+                    Chr(34) & Chr(34) & ",SUMIF($K15:$K16,$A" & fixRow & "," & _
+                    fixColAddr & "15:" & fixColAddr & "16))"
+            Next fixRow
+        Next fixCatIdx
+    End If
     ' ヘルパー列の幅を新しい位置（tplSumifStartCol + categoryMappings.Count）に設定する
     ' 部分行Insert/Deleteでは列幅が引き継がれないため、保存した幅を明示的に復元する
     Dim newHelperCol As Long
@@ -643,10 +679,14 @@ Public Sub CmdGen_Click_Core(Optional testMode As Boolean = False)
     For sumifWidthIdx = tplSumifStartCol To newHelperCol - 1
         SheetTemplate.Columns(sumifWidthIdx).ColumnWidth = savedSumifColWidth
     Next sumifWidthIdx
-    ' 計列の行14（集計用ワークヘッダー行）の背景色をクリアする
-    ' catColDiff > 0 の行1-16 Insertにより$K14（対応状況 = 黄色背景）の書式が新計列にコピーされるため
+    ' Phase1 Insert（行1-16, actualSumifStart〜+catColDiff-1列）の行14 背景色をクリアする
+    ' $K14（対応状況 = 黄色背景）に隣接して挿入された列（L,M,N等）が黄色書式を継承するため、
+    ' actualSumifStart から catColDiff 列分をまとめてクリアする
     If catColDiff > 0 Then
-        SheetTemplate.Cells(14, COL_CATEGORY_START + categoryMappings.Count).Interior.ColorIndex = xlNone
+        Dim clrRow14Col As Long
+        For clrRow14Col = actualSumifStart To actualSumifStart + catColDiff - 1
+            SheetTemplate.Cells(14, clrRow14Col).Interior.ColorIndex = xlNone
+        Next clrRow14Col
     End If
     ' [Phase3拡張] SheetTemplateのカテゴリヘッダーを設定シート順番通りに書き換える
     ' テンプレート調整フェーズで書き換えることで、コピー後のoutputシートは指摘詳細の更新のみでよくなる
