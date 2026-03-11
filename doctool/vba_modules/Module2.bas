@@ -1,4 +1,6 @@
-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+Option Explicit
+
 'testMode時のダイアログログ用変数
 Private dialogLog As String
 
@@ -27,28 +29,17 @@ End Sub
 
 Public Sub DelAllReviewComments_Click_Core(Optional testMode As Boolean = False)
     Dim targetBookNamePattern As Object
-    Set targetBookNamePattern = CreateObject("VBScript.RegExp")
-    With targetBookNamePattern
-        .Pattern = ThisWorkbook.Worksheets("基本設定").Range("B4").Value
-        .IgnoreCase = False
-        .Global = True
-    End With
     Dim noTargetBookNamePattern As Object
-    Set noTargetBookNamePattern = CreateObject("VBScript.RegExp")
-    With noTargetBookNamePattern
-        .Pattern = ThisWorkbook.Worksheets("基本設定").Range("B5").Value
-        .IgnoreCase = False
-        .Global = True
-    End With
+    Call InitRegexPatterns(targetBookNamePattern, noTargetBookNamePattern)
     Dim book As Workbook
     Dim s As Worksheet
-    Dim cmnt As comment
+    Dim cmnt As Comment
     Dim fileCount As Integer
     fileCount = 0
     Dim category As String
     Dim categoryMappings As Object
     Set categoryMappings = CreateObject("Scripting.Dictionary")
-    With ThisWorkbook.Worksheets("指摘分類マッピング設定")
+    With ThisWorkbook.Worksheets(SHEETNAME_CATEGORY_MAPPING)
         Dim cmRow As Long
         For cmRow = 2 To .Cells(Application.Rows.Count, 1).End(xlUp).Row
             Call categoryMappings.Add(.Cells(cmRow, 1).Value, .Cells(cmRow, 2).Value)
@@ -68,8 +59,8 @@ Public Sub DelAllReviewComments_Click_Core(Optional testMode As Boolean = False)
                 LogDialog "[DIALOG] " & book.Name & " のメモを削除してよろしいですか？"
             End If
             For Each s In book.Worksheets
-                For Each cmnt In s.comments
-                    Dim commentText As String
+                Dim commentText As String
+                For Each cmnt In s.Comments
                     commentText = cmnt.Text
                     'コメントに:が含まれ、改行があれば処理対象に
                     If InStr(1, StrConv(commentText, vbNarrow), ":") >= 1 And InStr(1, commentText, vbLf) >= 1 Then
@@ -109,19 +100,8 @@ End Sub
 
 Public Sub DelAllReviewResultSheets_Click_Core(Optional testMode As Boolean = False)
     Dim targetBookNamePattern As Object
-    Set targetBookNamePattern = CreateObject("VBScript.RegExp")
-    With targetBookNamePattern
-        .Pattern = ThisWorkbook.Worksheets("基本設定").Range("B4").Value
-        .IgnoreCase = False
-        .Global = True
-    End With
     Dim noTargetBookNamePattern As Object
-    Set noTargetBookNamePattern = CreateObject("VBScript.RegExp")
-    With noTargetBookNamePattern
-        .Pattern = ThisWorkbook.Worksheets("基本設定").Range("B5").Value
-        .IgnoreCase = False
-        .Global = True
-    End With
+    Call InitRegexPatterns(targetBookNamePattern, noTargetBookNamePattern)
     Dim book As Workbook
     Dim s As Worksheet
     Dim fileCount As Integer

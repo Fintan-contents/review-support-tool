@@ -1,4 +1,14 @@
 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+Option Explicit
+
+'=====================================================
+' シート名定数
+' 設定シートの名称変更時はここのみ修正する
+'=====================================================
+Public Const SHEETNAME_BASIC_SETTINGS As String = "基本設定"
+Public Const SHEETNAME_CATEGORY_MAPPING As String = "指摘分類マッピング設定"
+Public Const SHEETNAME_ITEM_MAPPING As String = "項目マッピング設定"
+
 Dim re As Object
 
 '=====================================================
@@ -48,6 +58,7 @@ Public Sub OutputTimerLog(targetWorkbook As Workbook)
     If Not ENABLE_PERF_LOG Then Exit Sub
     Const PERF_SHEETNAME = "パフォーマンス計測"
     Dim perfSheet As Worksheet
+    Dim i As Long
     If hasSheet(targetWorkbook, PERF_SHEETNAME) Then
         Set perfSheet = targetWorkbook.Worksheets(PERF_SHEETNAME)
         perfSheet.Cells.ClearContents
@@ -63,7 +74,6 @@ Public Sub OutputTimerLog(targetWorkbook As Workbook)
     perfSheet.Cells(3, 1).Value = "フェーズ"
     perfSheet.Cells(3, 2).Value = "全体経過(秒)"
     perfSheet.Cells(3, 3).Value = "区間(秒)"
-    Dim i As Long
     For i = 0 To timerLogCount - 1
         perfSheet.Cells(i + 4, 1).Value = timerLabels(i)
         perfSheet.Cells(i + 4, 2).Value = timerElapsed(i)
@@ -80,8 +90,31 @@ Public Sub initializeModule1()
         .Global = True
     End With
 End Sub
+
+'=====================================================
+' 関数名: InitRegexPatterns
+' 機能: 対象ブック名パターン・除外パターンの正規表現オブジェクトを初期化する
+' 引数: targetPattern   - 対象ブック名マッチ用正規表現オブジェクト（ByRef）
+'       noTargetPattern - 除外ブック名マッチ用正規表現オブジェクト（ByRef）
+' 備考: パターン文字列は「基本設定」シートの B4（対象）・B5（除外）セルから取得する
+'=====================================================
+Public Sub InitRegexPatterns(ByRef targetPattern As Object, ByRef noTargetPattern As Object)
+    Set targetPattern = CreateObject("VBScript.RegExp")
+    With targetPattern
+        .Pattern = ThisWorkbook.Worksheets(SHEETNAME_BASIC_SETTINGS).Range("B4").Value
+        .IgnoreCase = False
+        .Global = True
+    End With
+    Set noTargetPattern = CreateObject("VBScript.RegExp")
+    With noTargetPattern
+        .Pattern = ThisWorkbook.Worksheets(SHEETNAME_BASIC_SETTINGS).Range("B5").Value
+        .IgnoreCase = False
+        .Global = True
+    End With
+End Sub
+
 Public Function hasSheet(book As Workbook, query As String) As Boolean
-    Dim item
+    Dim item As Worksheet
     For Each item In book.Worksheets
         If item.Name = query Then
             hasSheet = True
@@ -103,6 +136,7 @@ Public Function inStrCount(s As String, query As String) As Integer
 End Function
 Public Function repeat(s As String, cnt As Integer) As String
     Dim work As String
+    Dim i As Integer
     work = ""
     For i = 1 To cnt
         work = work & s
