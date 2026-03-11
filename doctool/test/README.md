@@ -144,6 +144,24 @@ setup:
   review_list_file: "レビュー記録一覧.xlsx"
   # REVIEW_LIST_FILEPATH 名前付き範囲を work_dir 内ファイルの絶対パスで自動設定
   # レビュー記録サマリ使用時は use_summary: true と併せて指定する
+  categories:
+    - alias: "a"
+      name: "01_要件漏れ"
+    - alias: "b"
+      name: "02_要件誤り"
+  # 指摘分類マッピング設定シートを上書き（省略時は xlsm 保存済みの設定を使用）
+  # extract ステップの categories キーで上書きするとステップ間でカテゴリを変更できる
+
+# ---------------------------------------------------------
+# テンプレートシートのアサーション（v2.0 カテゴリ動的調整の検証）
+# ---------------------------------------------------------
+
+template_assertions:
+  - sheet: "レビュー結果シートテンプレート"   # 省略時はこのシート名
+    category_count: 12       # 行7 B列以降の非空セル数（カテゴリ列数）
+    cell_formula_contains:
+      - cell: "B9"
+        contains: "$K15"     # 指定セルの数式に文字列が含まれることを確認
 ```
 
 #### 検証方式の選択ガイド
@@ -156,6 +174,9 @@ setup:
 | ファイルを Gold Master 比較もしたくない | `file_expectations` + `assert_no_sheets: []` |
 | ファイルを Excel で開かずに実行したい | `skip_open_files` |
 | xlsm の基本設定を上書きしたい（サマリー等） | `setup` |
+| カテゴリマッピングを上書きしたい | `setup.categories` |
+| ステップ間でカテゴリを変更したい | extract ステップの `categories` |
+| テンプレートシートの列数・数式を検証したい | `template_assertions` |
 
 ### テスト対象範囲
 

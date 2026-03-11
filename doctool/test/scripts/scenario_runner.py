@@ -28,6 +28,9 @@ DOCTOOL_XLSM = (
 TEMP_DIR = Path(__file__).parent.parent / "temp_dir"
 
 
+XLSM_NAME = "Excel設計書レビュー指摘事項抽出ツール.xlsm"
+
+
 def run_scenario(scenario_src_dir: Path) -> tuple[Path, dict]:
     """シナリオを実行し、(作業ディレクトリ, config) を返す。
 
@@ -59,7 +62,7 @@ def run_scenario(scenario_src_dir: Path) -> tuple[Path, dict]:
     shutil.copytree(str(scenario_src_dir), str(work_dir), dirs_exist_ok=True)
 
     # doctool xlsm をコピー
-    xlsm_dest = work_dir / "Excel設計書レビュー指摘事項抽出ツール.xlsm"
+    xlsm_dest = work_dir / XLSM_NAME
     shutil.copy2(DOCTOOL_XLSM, xlsm_dest)
 
     # skip_open_files に該当しないファイルだけ Excel で開く
@@ -78,6 +81,79 @@ def run_scenario(scenario_src_dir: Path) -> tuple[Path, dict]:
 
     _execute_vba(scenario_name, xlsm_dest, open_files, config, visible, test_mode, work_dir)
     return work_dir, config
+
+
+def evaluate_template_assertions(
+    work_dir: Path,
+    assertions: list[dict],
+) -> list[str]:
+    """テンプレートシートのアサーションを評価し、エラーメッセージのリストを返す。
+
+    VBA 実行・保存後の xlsm ファイルを openpyxl で読み込み、以下を検証する:
+    - category_count: 行7 B列以降の非空セル数（カテゴリ列数）
+    - cell_formula_contains: 指定セルの数式が特定文字列を含む
+
+    Args:
+        work_dir: VBA 実行後の xlsm が格納されたディレクトリ
+        assertions: config.yaml の template_assertions リスト
+
+    Returns:
+        list[str]: エラーメッセージのリスト（空なら全アサーション通過）
+    """
+    xlsm_path = work_dir / XLSM_NAME
+    errors = []
+
+    try:
+        wb_values = openpyxl.load_workbook(str(xlsm_path), keep_vba=True, data_only=True)
+        wb_formulas = openpyxl.load_workbook(str(xlsm_path), keep_vba=True, data_only=False)
+    except Exception as e:
+        return [f"template_assertions: xlsm の読み込みに失敗しました: {e}"]
+
+    for assertion in assertions:
+        sheet_name = assertion.get("sheet", "レビュー結果シートテンプレート")
+
+        if sheet_name not in wb_values.sheetnames:
+            errors.append(f"template_assertions: シート '{sheet_name}' が存在しません")
+            continue
+
+        ws_v = wb_values[sheet_name]
+        ws_f = wb_formulas[sheet_name]
+
+        # カテゴリ列数チェック（行7 B列以降の非空セル数）
+        if "category_count" in assertion:
+            expected = assertion["category_count"]
+            count = 0
+            col = 2  # B列
+            while ws_v.cell(7, col).value is not None:
+                count += 1
+                col += 1
+            if count != expected:
+                errors.append(
+                    f"[{sheet_name}] category_count: expected={expected}, actual={count}"
+                )
+            else:
+                print(f"  ✓ [{sheet_name}] category_count = {count}")
+
+        # 数式の文字列チェック
+        for fc in assertion.get("cell_formula_contains", []):
+            cell_ref = fc["cell"]
+            expected_text = fc["contains"]
+            formula = ws_f[cell_ref].value
+            if formula is None:
+                errors.append(
+                    f"[{sheet_name}!{cell_ref}] cell_formula_contains: セルが空です"
+                )
+            elif expected_text not in str(formula):
+                errors.append(
+                    f"[{sheet_name}!{cell_ref}] cell_formula_contains:"
+                    f" '{expected_text}' が数式 '{formula}' に含まれていません"
+                )
+            else:
+                print(f"  ✓ [{sheet_name}!{cell_ref}] 数式に '{expected_text}' を含む")
+
+    wb_values.close()
+    wb_formulas.close()
+    return errors
 
 
 def evaluate_scenario(work_dir: Path, scenario_src_dir: Path, config: dict) -> list[str]:
@@ -158,11 +234,18 @@ def evaluate_scenario(work_dir: Path, scenario_src_dir: Path, config: dict) -> l
             )
         assertion_count += 1
 
+    # template_assertions の評価
+    template_assertions = config.get("template_assertions", [])
+    if template_assertions:
+        template_errors = evaluate_template_assertions(work_dir, template_assertions)
+        errors.extend(template_errors)
+        assertion_count += len(template_assertions)
+
     # アサーションが1件もない場合はテスト設定ミスとして失敗
     if assertion_count == 0:
         errors.append(
             "アサーションが1件もありません。"
-            "_expected.xlsx を配置するか file_expectations でアサーションを設定してください。"
+            "_expected.xlsx を配置するか file_expectations/template_assertions を設定してください。"
         )
 
     return errors
@@ -212,6 +295,8 @@ def _execute_vba(
                 review_list_path = work_dir / setup["review_list_file"]
                 xlsm_wb.names["REVIEW_LIST_FILEPATH"].refers_to_range.value = str(review_list_path)
                 print(f"[{scenario_name}] setup: REVIEW_LIST_FILEPATH={review_list_path}")
+            if "categories" in setup:
+                _apply_categories(scenario_name, xlsm_wb, setup["categories"])
 
         macro = xlsm_wb.macro("Sheet1.CmdGen_Click_Core")
 
@@ -220,6 +305,10 @@ def _execute_vba(
             action = step["action"]
 
             if action == "extract":
+                # ステップ固有のカテゴリ設定（省略時はグローバル setup.categories を維持）
+                if "categories" in step:
+                    _apply_categories(scenario_name, xlsm_wb, step["categories"])
+
                 review_times = step["review_times"]
                 repeat = step.get("repeat", 1)
                 print(
@@ -261,6 +350,30 @@ def _execute_vba(
 
     finally:
         _cleanup_excel(scenario_name, app, open_wbs, xlsm_wb)
+
+
+def _apply_categories(
+    scenario_name: str,
+    xlsm_wb,
+    categories: list[dict],
+) -> None:
+    """指摘分類マッピング設定シートをカテゴリリストで上書きする。
+
+    Args:
+        scenario_name: ログ用シナリオ名
+        xlsm_wb: xlwings Workbook オブジェクト
+        categories: [{"alias": "a", "name": "01_要件漏れ"}, ...] のリスト
+    """
+    cat_ws = xlsm_wb.sheets["指摘分類マッピング設定"]
+    # 既存データを行2以降クリア
+    last_row = cat_ws.range("A1").current_region.last_cell.row
+    if last_row >= 2:
+        cat_ws.range(f"A2:B{last_row}").clear_contents()
+    # 新しいカテゴリを書き込む
+    for i, cat in enumerate(categories, start=2):
+        cat_ws.range(f"A{i}").value = cat["alias"]
+        cat_ws.range(f"B{i}").value = cat["name"]
+    print(f"[{scenario_name}] categories: {len(categories)} カテゴリを設定 ({[c['alias'] for c in categories]})")
 
 
 def _run_delete_macro(

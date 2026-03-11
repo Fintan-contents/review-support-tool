@@ -71,3 +71,13 @@ def validate_step(step: Dict[str, Any]) -> None:
             repeat = step["repeat"]
             if not isinstance(repeat, int) or repeat < 1:
                 raise ValueError(f"Invalid repeat value: {repeat}")
+
+        if "categories" in step:
+            cats = step["categories"]
+            if not isinstance(cats, list) or not cats:
+                raise ValueError(f"'categories' must be a non-empty list: {cats}")
+            for cat in cats:
+                if not isinstance(cat, dict) or "alias" not in cat or "name" not in cat:
+                    raise ValueError(
+                        f"Each category must have 'alias' and 'name' keys: {cat}"
+                    )
