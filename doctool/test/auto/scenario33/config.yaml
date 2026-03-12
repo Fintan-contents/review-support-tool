@@ -1,0 +1,23 @@
+viewpoint: "観点67: レビュー回数順序不正（前回分のシートが存在しない）の場合（E07）でエラーになり処理中断する"
+instructions:
+  - "1回目を実行せずに review_times=2 で直接実行する"
+  - "VBA は設計書に「レビュー結果1回目」シートが存在しないことを検出し E07 で中断する"
+  - "E07 はファイル処理ループ内・結果シート作成前に発火する"
+  - "C02（抽出前確認）は出現するが I01（完了通知）は出現しない"
+  - "検証: E07 がログに記録され、設計書に「レビュー結果2回目」シートが生成されないこと"
+
+# 1回目抽出を実行せず直接 review_times=2 を指定 → E07 発火
+setup:
+  use_review_record: true
+
+steps:
+  - action: extract
+    review_times: 2
+
+expected_messages:
+  - "C02"
+  - "E07"
+
+file_expectations:
+  - pattern: "システム機能設計書_サンプル_S33\\.xlsx"
+    assert_no_sheets: ["レビュー結果2回目"]

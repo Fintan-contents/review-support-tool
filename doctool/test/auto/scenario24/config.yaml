@@ -1,0 +1,28 @@
+viewpoint: "観点70: 工程を設計書から取得できない場合（W02）に警告して「取得できませんでした」をセットし処理続行する"
+instructions:
+  - "REVIEW_LIST_PHASE_SHEET に存在しないシート名を設定し、checkReference を失敗させる"
+  - "W02 は結果シート作成後に発火 → 処理は続行し I01 が出力される"
+  - "検証: W02 がログに記録され、結果シートが正しく生成されること"
+  - "template_assertions を構造的アサーションとして使用（Gold Master は省略）"
+
+# REVIEW_LIST_PHASE: 固定値を空にする（参照による取得を試みる）
+# REVIEW_LIST_PHASE_SHEET: 存在しないシート名 → checkReference 失敗 → W02
+# REVIEW_LIST_PHASE_CELL: 任意セル（checkReference はシート存在チェック後にセル参照）
+setup:
+  named_ranges:
+    REVIEW_LIST_PHASE: ""
+    REVIEW_LIST_PHASE_SHEET: "存在しないシート"
+    REVIEW_LIST_PHASE_CELL: "B1"
+
+steps:
+  - action: extract
+    review_times: 1
+
+expected_messages:
+  - "C02"
+  - "W02"
+  - "I01"
+
+template_assertions:
+  - sheet: "レビュー結果シートテンプレート"
+    category_count: 9

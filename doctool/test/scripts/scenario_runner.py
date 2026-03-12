@@ -350,6 +350,18 @@ def _execute_vba(
                 print(f"[{scenario_name}] setup: REVIEW_LIST_FILEPATH={review_list_path}")
             if "categories" in setup:
                 _apply_categories(scenario_name, xlsm_wb, setup["categories"])
+            if "named_ranges" in setup:
+                for range_name, value in setup["named_ranges"].items():
+                    try:
+                        xlsm_wb.names[range_name].refers_to_range.value = value
+                        print(f"[{scenario_name}] setup: named_ranges[{range_name}]={repr(value)}")
+                    except Exception as e:
+                        print(f"[{scenario_name}] setup: named_ranges warning [{range_name}]: {e}")
+            if "item_mapping_cells" in setup:
+                map_ws = xlsm_wb.sheets["項目マッピング設定"]
+                for cell_ref, value in setup["item_mapping_cells"].items():
+                    map_ws[cell_ref].value = value
+                    print(f"[{scenario_name}] setup: item_mapping_cells[{cell_ref}]={repr(value)}")
 
         macro = xlsm_wb.macro("Sheet1.CmdGen_Click_Core")
 
