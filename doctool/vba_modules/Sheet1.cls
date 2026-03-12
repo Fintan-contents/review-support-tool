@@ -640,11 +640,33 @@ Public Sub CmdGen_Click_Core(Optional testMode As Boolean = False)
                                  SheetTemplate.Cells(DETAIL_START_ROW + 1, rightmostLT)).Delete Shift:=xlShiftToLeft
         Next ltInsertIdx
     End If
+    ' [Bug Fix] 集計用ワーク（SUMIFフラグ列）が対応状況列の直右から始まるよう整列する
+    ' 「期待するSUMIF開始列」= max(計列+1, COL_CATEGORY_HEADER_START) と tplSumifStartCol の差が
+    ' ギャップ列数。これにより catColDiff の正負を問わず正しいギャップを算出できる。
+    '  例 9→12: 期待=max(15,12)=O(15), tpl=O(15), gap=0 → 削除なし（行7-11のcat11,12を保護）
+    '  例 6→9 : 期待=max(12,12)=L(12), tpl=O(15), gap=3 → L,M,N削除（行7-11は9catで空）
+    '  例 12→6: 期待=max( 9,12)=L(12), tpl=O(15), gap=3 → L,M,N削除（行7-11は6catで空）
+    ' ※ gap fix を先に行い tplSumifStartCol を更新してから SUMIF formula fix を実行する。
+    '   順序が逆だと SUMIF formula fix が削除前の列番号を使い再びズレが生じる。
+    Dim expectedSumifStart As Long
+    expectedSumifStart = COL_CATEGORY_START + categoryMappings.Count + 1
+    If expectedSumifStart < COL_CATEGORY_HEADER_START Then expectedSumifStart = COL_CATEGORY_HEADER_START
+    Dim gapColCount As Long
+    gapColCount = tplSumifStartCol - expectedSumifStart
+    If gapColCount > 0 Then
+        Dim gapIdx As Long
+        For gapIdx = 1 To gapColCount
+            SheetTemplate.Range( _
+                SheetTemplate.Cells(1, expectedSumifStart), _
+                SheetTemplate.Cells(DETAIL_START_ROW + 1, expectedSumifStart)).Delete Shift:=xlShiftToLeft
+        Next gapIdx
+        tplSumifStartCol = expectedSumifStart
+    End If
     ' [Bug Fix] catColDiff > 0 で追加した新カテゴリ列（行9/10）の SUMIF sum_range 列参照を修正する
     ' BKループ時点では対応する SUMIF フラグ列がまだ存在しないため、BK ループが生成する相対列参照は
     ' 「本来の SUMIF 列位置」を指す。しかし後続の sumifColDiff ループが同列に Insert を実行するたびに
     ' 参照が +1 ずつズレ、最終的にヘルパー列等の誤列を参照してしまう。
-    ' sumifColDiff 処理完了後に正しい SUMIF フラグ列アドレスで上書きして修正する。
+    ' gap fix 後の tplSumifStartCol（正しいSUMIF開始列）を使って上書き修正する。
     If catColDiff > 0 Then
         Dim fixCatIdx As Long
         Dim fixCatCol As Long
@@ -666,23 +688,6 @@ Public Sub CmdGen_Click_Core(Optional testMode As Boolean = False)
                     fixColAddr & "15:" & fixColAddr & "16))"
             Next fixRow
         Next fixCatIdx
-    End If
-    ' [Bug Fix] 集計用ワーク（SUMIFフラグ列）が K列（対応状況）の右隣から始まるよう整列する
-    ' Phase1 Insert や actualSumifStart > COL_CATEGORY_HEADER_START の場合に
-    ' tplSumifStartCol > COL_CATEGORY_HEADER_START となり、K列と SUMIF エリアの間に
-    ' 空列が生じる（例: 12→6, 6→9）。gap 分の列を行1〜DETAIL_START_ROW+1 から削除して
-    ' SUMIF エリアを左に詰め、tplSumifStartCol を更新する。
-    ' 行14 の黄色背景もこの削除で同時に解消されるため、別途クリア処理は不要。
-    Dim gapColCount As Long
-    gapColCount = tplSumifStartCol - COL_CATEGORY_HEADER_START
-    If gapColCount > 0 Then
-        Dim gapIdx As Long
-        For gapIdx = 1 To gapColCount
-            SheetTemplate.Range( _
-                SheetTemplate.Cells(1, COL_CATEGORY_HEADER_START), _
-                SheetTemplate.Cells(DETAIL_START_ROW + 1, COL_CATEGORY_HEADER_START)).Delete Shift:=xlShiftToLeft
-        Next gapIdx
-        tplSumifStartCol = COL_CATEGORY_HEADER_START
     End If
     ' ヘルパー列の幅を新しい位置（tplSumifStartCol + categoryMappings.Count）に設定する
     ' 部分行Insert/Deleteでは列幅が引き継がれないため、保存した幅を明示的に復元する
