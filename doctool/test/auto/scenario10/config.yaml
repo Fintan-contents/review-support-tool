@@ -14,3 +14,11 @@ steps:
 #   設計書: レビュー結果シートが削除されていること、レビューコメント(*,a-c)が削除されていること、
 #           カテゴリなしコメント(A71)が残存していること
 #   記録票: extract 後の転記内容が正しく、シートが意図せず削除されていないこと
+
+expected_messages:
+  - "C02"  # extract: 抽出確認
+  - "I01"  # extract: 完了通知
+  - "C04"  # delete_comments: 削除確認
+  - "I02"  # delete_comments: 削除完了
+  - "C05"  # delete_sheets: 削除確認
+  - "I03"  # delete_sheets: 削除完了

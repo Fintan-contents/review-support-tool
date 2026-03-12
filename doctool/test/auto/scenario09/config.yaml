@@ -19,3 +19,10 @@ file_expectations:
       - "レビュー結果1回目"
   - pattern: ".*レビュー記録票.*"
     assert_no_sheets: []  # 記録票は未開封のまま・Gold Master 比較不要
+
+# W01 が出て設計書がスキップされ fileCount=0 → E08 に至る
+# レビュー記録票が開いていない → W01 → 設計書スキップ → E08（対象なし）
+expected_messages:
+  - "C02"
+  - "W01"
+  - "E08"

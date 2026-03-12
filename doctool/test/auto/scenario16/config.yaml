@@ -32,7 +32,9 @@ steps:
         name: "22_記述誤り"
 
 expected_messages:
-  - "E13"
+  - "C02"  # 各ステップで設計書の抽出確認ダイアログ
+  - "I01"  # Step1 完了通知（Step2 は E13 で中断するため I01 なし）
+  - "E13"  # Step2: カテゴリ変更検出エラー
 
 file_expectations:
   - pattern: "システム機能設計書_サンプル_S16\\.xlsx"

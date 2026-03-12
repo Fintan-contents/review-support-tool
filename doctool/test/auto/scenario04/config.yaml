@@ -11,3 +11,7 @@ steps:
     review_times: 2
   - action: extract
     review_times: 3
+
+expected_messages:
+  - "C02"
+  - "I01"

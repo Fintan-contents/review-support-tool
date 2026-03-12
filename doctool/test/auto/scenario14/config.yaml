@@ -51,3 +51,7 @@ steps:
         name: "95_テスト漏れ"
       - alias: "l"
         name: "96_その他"
+
+expected_messages:
+  - "C02"
+  - "I01"

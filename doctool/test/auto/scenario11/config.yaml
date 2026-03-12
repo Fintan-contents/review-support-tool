@@ -13,3 +13,7 @@ setup:
 steps:
   - action: extract
     review_times: 1
+
+expected_messages:
+  - "C02"
+  - "I01"

@@ -1,0 +1,15 @@
+viewpoint: "観点W06: 未登録カテゴリのコメントがエラーシートに記録され、他の有効コメントが正常に抽出される"
+instructions:
+  - "入力: S01 の内容に加え、未登録カテゴリ z: のコメントを D50 に追加"
+  - "REVIEW_TIMES=1 で抽出実行"
+  - "検証: エラーシートに「未登録の指摘分類エイリアスが記入されています: z」が記録されること"
+  - "検証: a/b/c の有効コメントはレビュー結果1回目に正常に抽出されること"
+  - "Gold Master 比較で抽出出力の内容を検証（_expected.xlsx は Windows で実行後に作成）"
+
+steps:
+  - action: extract
+    review_times: 1
+
+expected_messages:
+  - "C02"
+  - "I01"

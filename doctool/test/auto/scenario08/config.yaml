@@ -7,3 +7,9 @@ instructions:
 steps:
   - action: extract
     review_times: 1
+
+# W05（日時コメント不正）はエラーシートへの書き込みであり MsgBox 経由ではないため
+# expected_messages には含まれない。エラーシート内容は Gold Master 比較で検証。
+expected_messages:
+  - "C02"
+  - "I01"

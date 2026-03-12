@@ -246,28 +246,47 @@ def evaluate_scenario(work_dir: Path, scenario_src_dir: Path, config: dict) -> l
         errors.extend(template_errors)
         assertion_count += len(template_assertions)
 
-    # expected_messages の評価
-    # dialog_log.txt の [MSG:XX] エントリと config の expected_messages を照合する
-    expected_messages = config.get("expected_messages", [])
-    if expected_messages:
+    # expected_messages の評価（双方向チェック）
+    # config に expected_messages が定義されている場合のみ評価する（None = 未定義はスキップ）
+    # - 正方向: expected に列挙したメッセージIDが全て dialog_log に出現しているか
+    # - 逆方向: dialog_log に出現したメッセージIDが expected 以外のものを含んでいないか
+    expected_messages = config.get("expected_messages")
+    if expected_messages is not None:
         log_path = work_dir / DIALOG_LOG_FILENAME
         if not log_path.exists():
-            errors.append(
-                "expected_messages: ダイアログログ（dialog_log.txt）が存在しません。"
-                " testMode で extract ステップが実行されていない可能性があります。"
-            )
+            if expected_messages:
+                errors.append(
+                    "expected_messages: ダイアログログ（dialog_log.txt）が存在しません。"
+                    " testMode で extract ステップが実行されていない可能性があります。"
+                )
+            # expected_messages: [] でログなしは正常（ダイアログが出ないシナリオ）
         else:
             log_content = log_path.read_text(encoding="utf-8")
             found_ids = re.findall(r'\[MSG:([A-Z]\d+)\]', log_content)
+            found_set = set(found_ids)
+            expected_set = set(expected_messages)
+
+            # 正方向: expected に列挙した全IDがログに存在するか
             for expected_id in expected_messages:
-                if expected_id in found_ids:
+                if expected_id in found_set:
                     print(f"  ✓ expected_messages: '{expected_id}' を確認")
                 else:
                     errors.append(
                         f"expected_messages: '{expected_id}' がダイアログログに見つかりません"
-                        f" (実際のログ: {found_ids})"
+                        f" (実際のログ: {sorted(found_set)})"
                     )
-        assertion_count += len(expected_messages)
+
+            # 逆方向: ログに想定外のIDが含まれていないか
+            unexpected = found_set - expected_set
+            if unexpected:
+                errors.append(
+                    f"expected_messages: 想定外のメッセージが出力されました: {sorted(unexpected)}"
+                    f" (expected: {sorted(expected_set)})"
+                )
+            else:
+                print(f"  ✓ expected_messages: 想定外メッセージなし")
+
+        assertion_count += len(expected_messages) + 1  # +1 は逆方向チェック分
 
     # アサーションが1件もない場合はテスト設定ミスとして失敗
     if assertion_count == 0:

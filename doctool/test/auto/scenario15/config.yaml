@@ -73,3 +73,7 @@ steps:
         name: "91_疑問点、確認"
       - alias: "h"
         name: "92_改善要望"
+
+expected_messages:
+  - "C02"
+  - "I01"

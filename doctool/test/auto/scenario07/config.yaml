@@ -8,3 +8,7 @@ steps:
   - action: extract
     review_times: 1
     repeat: 2  # 同じREVIEW_TIMESで2回実行し、2回目に自動上書きを検証
+
+expected_messages:
+  - "C02"
+  - "I01"
