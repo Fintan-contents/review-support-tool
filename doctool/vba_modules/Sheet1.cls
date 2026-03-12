@@ -667,6 +667,23 @@ Public Sub CmdGen_Click_Core(Optional testMode As Boolean = False)
             Next fixRow
         Next fixCatIdx
     End If
+    ' [Bug Fix] 集計用ワーク（SUMIFフラグ列）が K列（対応状況）の右隣から始まるよう整列する
+    ' Phase1 Insert や actualSumifStart > COL_CATEGORY_HEADER_START の場合に
+    ' tplSumifStartCol > COL_CATEGORY_HEADER_START となり、K列と SUMIF エリアの間に
+    ' 空列が生じる（例: 12→6, 6→9）。gap 分の列を行1〜DETAIL_START_ROW+1 から削除して
+    ' SUMIF エリアを左に詰め、tplSumifStartCol を更新する。
+    ' 行14 の黄色背景もこの削除で同時に解消されるため、別途クリア処理は不要。
+    Dim gapColCount As Long
+    gapColCount = tplSumifStartCol - COL_CATEGORY_HEADER_START
+    If gapColCount > 0 Then
+        Dim gapIdx As Long
+        For gapIdx = 1 To gapColCount
+            SheetTemplate.Range( _
+                SheetTemplate.Cells(1, COL_CATEGORY_HEADER_START), _
+                SheetTemplate.Cells(DETAIL_START_ROW + 1, COL_CATEGORY_HEADER_START)).Delete Shift:=xlShiftToLeft
+        Next gapIdx
+        tplSumifStartCol = COL_CATEGORY_HEADER_START
+    End If
     ' ヘルパー列の幅を新しい位置（tplSumifStartCol + categoryMappings.Count）に設定する
     ' 部分行Insert/Deleteでは列幅が引き継がれないため、保存した幅を明示的に復元する
     Dim newHelperCol As Long
@@ -679,15 +696,6 @@ Public Sub CmdGen_Click_Core(Optional testMode As Boolean = False)
     For sumifWidthIdx = tplSumifStartCol To newHelperCol - 1
         SheetTemplate.Columns(sumifWidthIdx).ColumnWidth = savedSumifColWidth
     Next sumifWidthIdx
-    ' Phase1 Insert（行1-16, actualSumifStart〜+catColDiff-1列）の行14 背景色をクリアする
-    ' $K14（対応状況 = 黄色背景）に隣接して挿入された列（L,M,N等）が黄色書式を継承するため、
-    ' actualSumifStart から catColDiff 列分をまとめてクリアする
-    If catColDiff > 0 Then
-        Dim clrRow14Col As Long
-        For clrRow14Col = actualSumifStart To actualSumifStart + catColDiff - 1
-            SheetTemplate.Cells(14, clrRow14Col).Interior.ColorIndex = xlNone
-        Next clrRow14Col
-    End If
     ' [Phase3拡張] SheetTemplateのカテゴリヘッダーを設定シート順番通りに書き換える
     ' テンプレート調整フェーズで書き換えることで、コピー後のoutputシートは指摘詳細の更新のみでよくなる
     ' 行7: エイリアス、行8: 指摘分類名（B列〜）
