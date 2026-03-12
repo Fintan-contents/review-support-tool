@@ -1,27 +1,47 @@
-viewpoint: "観点62: 工程・レビュア・レビュイの反映値が未入力（E02）でエラーになり処理中断する"
+viewpoint: "観点46: カテゴリ増設定（9→12）でレビュー記録サマリ使用時、レビュー記録一覧のカテゴリヘッダーが正しく増設される"
 instructions:
-  - "REVIEW_LIST_PHASE='' かつ REVIEW_LIST_PHASE_SHEET='' に設定"
-  - "E02 は use_summary の値に関係なく（Else ブロックで）発火する"
-  - "E02 はファイルループ前に発火するため、C02・I01 は出現しない"
-  - "検証: E02 がログに記録され、設計書に結果シートが生成されないこと"
+  - "12カテゴリ設定 + レビュー記録サマリ使用 で抽出実行"
+  - "検証: レビュー記録一覧のカテゴリヘッダーが12列に増設されること"
+  - "template_assertions でテンプレートシートのカテゴリ列数（12）を自動検証"
+  - "Gold Master（レビュー記録サマリ_S28_expected.xlsx）は Windows 実行後に作成"
 
-# REVIEW_LIST_PHASE="": 固定値が空
-# REVIEW_LIST_PHASE_SHEET="": 参照シートも空 → E02 条件成立
-# use_summary=false: E01 発火を回避（E01 は use_summary=true かつ FILEPATH="" の場合）
 setup:
-  use_summary: false
-  named_ranges:
-    REVIEW_LIST_PHASE: ""
-    REVIEW_LIST_PHASE_SHEET: ""
-    REVIEW_LIST_PHASE_CELL: ""
+  use_summary: true
+  review_list_file: "レビュー記録サマリ_S28.xlsx"
+  categories:
+    - alias: "a"
+      name: "01_要件漏れ"
+    - alias: "b"
+      name: "02_要件誤り"
+    - alias: "c"
+      name: "11_機能・仕様漏れ"
+    - alias: "d"
+      name: "12_機能・仕様誤り"
+    - alias: "e"
+      name: "21_設計・ドキュメント規約違反"
+    - alias: "f"
+      name: "22_記述誤り"
+    - alias: "g"
+      name: "91_疑問点、確認"
+    - alias: "h"
+      name: "92_改善要望"
+    - alias: "i"
+      name: "93_仕様変更"
+    - alias: "j"
+      name: "94_テスト項目漏れ"
+    - alias: "k"
+      name: "95_テスト漏れ"
+    - alias: "l"
+      name: "96_その他"
 
 steps:
   - action: extract
     review_times: 1
 
 expected_messages:
-  - "E02"
+  - "C02"
+  - "I01"
 
-file_expectations:
-  - pattern: "システム機能設計書_サンプル_S28\\.xlsx"
-    assert_no_sheets: ["レビュー結果1回目"]
+template_assertions:
+  - sheet: "レビュー結果シートテンプレート"
+    category_count: 12

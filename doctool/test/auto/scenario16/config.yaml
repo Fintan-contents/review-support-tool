@@ -1,41 +1,24 @@
-viewpoint: "E13: review_times=2 でカテゴリ変更時にエラーで中断する"
+viewpoint: "観点65: レビュー記録一覧ファイルに指定シートが存在しない場合（E05）でエラーになり処理中断する"
 instructions:
-  - "Step1: 9カテゴリ（デフォルト）で review_times=1 を実行（レビュー結果1回目 row9 に a〜i を書き込み）"
-  - "Step2: 6カテゴリに変更して review_times=2 を実行 → E13 で中断"
-  - "検証: E13 メッセージがダイアログログに記録されていること"
-  - "検証: レビュー結果2回目 シートが作成されていないこと"
+  - "レビュー記録サマリ_S16.xlsx はシート名不一致の最小構成ファイル（Sheet1 のみ）"
+  - "VBA がファイルを開いた後、REVIEW_LIST_SHEET（デフォルト名）のシートが存在しないことを検出"
+  - "E05 で中断される"
+  - "検証: E05 がログに記録され、設計書に結果シートが生成されないこと"
 
+# review_list_file: "レビュー記録サマリ_S16.xlsx" が存在する（E04 回避）が、
+# ファイル内に期待シートが存在しない（Sheet1 のみ）→ E05 発火
+# REVIEW_LIST_SHEET は xlsm のデフォルト値を使用する
 setup:
-  use_review_record: false
-  use_summary: false
+  use_summary: true
+  review_list_file: "レビュー記録サマリ_S16.xlsx"
 
 steps:
-  # Step 1: 9カテゴリ（デフォルト）で1回目抽出 → レビュー結果1回目にrow9エイリアスを書き込む
   - action: extract
     review_times: 1
 
-  # Step 2: 6カテゴリに変更して2回目抽出 → row9 の不一致を検出し E13 で中断
-  - action: extract
-    review_times: 2
-    categories:
-      - alias: "a"
-        name: "01_要件漏れ"
-      - alias: "b"
-        name: "02_要件誤り"
-      - alias: "c"
-        name: "11_機能・仕様漏れ"
-      - alias: "d"
-        name: "12_機能・仕様誤り"
-      - alias: "e"
-        name: "21_設計・ドキュメント規約違反"
-      - alias: "f"
-        name: "22_記述誤り"
-
 expected_messages:
-  - "C02"  # 各ステップで設計書の抽出確認ダイアログ
-  - "I01"  # Step1 完了通知（Step2 は E13 で中断するため I01 なし）
-  - "E13"  # Step2: カテゴリ変更検出エラー
+  - "E05"
 
 file_expectations:
   - pattern: "システム機能設計書_サンプル_S16\\.xlsx"
-    assert_no_sheets: ["レビュー結果2回目"]
+    assert_no_sheets: ["レビュー結果1回目"]

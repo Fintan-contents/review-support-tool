@@ -1,18 +1,37 @@
-viewpoint: "観点70: 工程を設計書から取得できない場合（W02）に警告して「取得できませんでした」をセットし処理続行する"
+viewpoint: "観点30,32〜36,38,43: カテゴリ増（9→12）でテンプレート列調整と抽出が正しく動作する"
 instructions:
-  - "REVIEW_LIST_PHASE_SHEET に存在しないシート名を設定し、checkReference を失敗させる"
-  - "W02 は結果シート作成後に発火 → 処理は続行し I01 が出力される"
-  - "検証: W02 がログに記録され、結果シートが正しく生成されること"
-  - "template_assertions を構造的アサーションとして使用（Gold Master は省略）"
+  - "入力: 12カテゴリ（a〜l）設定、各カテゴリに1件ずつコメントを配置した設計書"
+  - "setup.categories で xlsm を 12 カテゴリに上書きしてから抽出実行"
+  - "検証: テンプレートが 12 列に拡張され、全カテゴリの指摘が正しく集計されること"
+  - "template_assertions でカテゴリ列数（12）を自動検証"
+  - "Gold Master 比較で抽出出力の内容を検証"
 
-# REVIEW_LIST_PHASE: 固定値を空にする（参照による取得を試みる）
-# REVIEW_LIST_PHASE_SHEET: 存在しないシート名 → checkReference 失敗 → W02
-# REVIEW_LIST_PHASE_CELL: 任意セル（checkReference はシート存在チェック後にセル参照）
 setup:
-  named_ranges:
-    REVIEW_LIST_PHASE: ""
-    REVIEW_LIST_PHASE_SHEET: "存在しないシート"
-    REVIEW_LIST_PHASE_CELL: "B1"
+  categories:
+    - alias: "a"
+      name: "01_要件漏れ"
+    - alias: "b"
+      name: "02_要件誤り"
+    - alias: "c"
+      name: "11_機能・仕様漏れ"
+    - alias: "d"
+      name: "12_機能・仕様誤り"
+    - alias: "e"
+      name: "21_設計・ドキュメント規約違反"
+    - alias: "f"
+      name: "22_記述誤り"
+    - alias: "g"
+      name: "91_疑問点、確認"
+    - alias: "h"
+      name: "92_改善要望"
+    - alias: "i"
+      name: "93_仕様変更"
+    - alias: "j"
+      name: "94_テスト項目漏れ"
+    - alias: "k"
+      name: "95_テスト漏れ"
+    - alias: "l"
+      name: "96_その他"
 
 steps:
   - action: extract
@@ -20,9 +39,4 @@ steps:
 
 expected_messages:
   - "C02"
-  - "W02"
   - "I01"
-
-template_assertions:
-  - sheet: "レビュー結果シートテンプレート"
-    category_count: 9

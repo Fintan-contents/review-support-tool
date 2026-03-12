@@ -1,57 +1,26 @@
-viewpoint: "観点30〜45: カテゴリ増減後に増（9→6→12）でテンプレート列調整が正しく動作する"
+viewpoint: "観点63: レビュー記録サマリ使用時にシート名未入力（E03）でエラーになり処理中断する"
 instructions:
-  - "Step1: 6カテゴリで抽出（テンプレート 9→6 列に削減）"
-  - "Step2: 12カテゴリで再抽出（テンプレート 6→12 列に拡張、review_times=1 で上書き）"
-  - "増減を経て最終的に増やしたケースで集計用ワーク列位置・数式・書式が正しいことを検証"
-  - "Gold Master 比較で抽出出力の内容を検証"
+  - "use_summary=true + REVIEW_LIST_FILEPATH=非空（E01 回避）+ REVIEW_LIST_SHEET='' に設定"
+  - "E03 は E04（ファイル存在チェック）より前に発火するため、ファイルは存在しなくてよい"
+  - "検証: E03 がログに記録され、設計書に結果シートが生成されないこと"
+
+# use_summary=true: サマリ使用（E03 発火条件）
+# review_list_file: "placeholder.xlsx" → FILEPATH が非空文字列になるため E01 回避
+#   （scenario_runner.py が work_dir/placeholder.xlsx の絶対パスを FILEPATH に設定する）
+# REVIEW_LIST_SHEET="": シート名が空 → E03
+setup:
+  use_summary: true
+  review_list_file: "placeholder.xlsx"
+  named_ranges:
+    REVIEW_LIST_SHEET: ""
 
 steps:
-  # Step 1: 6カテゴリで抽出（テンプレートを 9→6 列に削減）
   - action: extract
     review_times: 1
-    categories:
-      - alias: "a"
-        name: "01_要件漏れ"
-      - alias: "b"
-        name: "02_要件誤り"
-      - alias: "c"
-        name: "11_機能・仕様漏れ"
-      - alias: "d"
-        name: "12_機能・仕様誤り"
-      - alias: "e"
-        name: "21_設計・ドキュメント規約違反"
-      - alias: "f"
-        name: "22_記述誤り"
-
-  # Step 2: 12カテゴリで再抽出（テンプレートを 6→12 列に拡張）
-  - action: extract
-    review_times: 1
-    categories:
-      - alias: "a"
-        name: "01_要件漏れ"
-      - alias: "b"
-        name: "02_要件誤り"
-      - alias: "c"
-        name: "11_機能・仕様漏れ"
-      - alias: "d"
-        name: "12_機能・仕様誤り"
-      - alias: "e"
-        name: "21_設計・ドキュメント規約違反"
-      - alias: "f"
-        name: "22_記述誤り"
-      - alias: "g"
-        name: "91_疑問点、確認"
-      - alias: "h"
-        name: "92_改善要望"
-      - alias: "i"
-        name: "93_仕様変更"
-      - alias: "j"
-        name: "94_テスト項目漏れ"
-      - alias: "k"
-        name: "95_テスト漏れ"
-      - alias: "l"
-        name: "96_その他"
 
 expected_messages:
-  - "C02"
-  - "I01"
+  - "E03"
+
+file_expectations:
+  - pattern: "システム機能設計書_サンプル_S14\\.xlsx"
+    assert_no_sheets: ["レビュー結果1回目"]

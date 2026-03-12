@@ -1,30 +1,27 @@
-viewpoint: "観点31〜35,39〜42: カテゴリ減（9→6）でテンプレート列削減と抽出が正しく動作する"
+viewpoint: "観点62: 工程・レビュア・レビュイの反映値が未入力（E02）でエラーになり処理中断する"
 instructions:
-  - "入力: 6カテゴリ（a〜f）設定、各カテゴリに1件ずつコメントを配置した設計書"
-  - "setup.categories で xlsm を 6 カテゴリに変更してから抽出実行"
-  - "検証: テンプレートが 6 列に削減され、全カテゴリの指摘が正しく集計されること"
-  - "template_assertions でカテゴリ列数（6）を自動検証"
-  - "Gold Master 比較で抽出出力の内容を検証"
+  - "REVIEW_LIST_PHASE='' かつ REVIEW_LIST_PHASE_SHEET='' に設定"
+  - "E02 は use_summary の値に関係なく（Else ブロックで）発火する"
+  - "E02 はファイルループ前に発火するため、C02・I01 は出現しない"
+  - "検証: E02 がログに記録され、設計書に結果シートが生成されないこと"
 
+# REVIEW_LIST_PHASE="": 固定値が空
+# REVIEW_LIST_PHASE_SHEET="": 参照シートも空 → E02 条件成立
+# use_summary=false: E01 発火を回避（E01 は use_summary=true かつ FILEPATH="" の場合）
 setup:
-  categories:
-    - alias: "a"
-      name: "01_要件漏れ"
-    - alias: "b"
-      name: "02_要件誤り"
-    - alias: "c"
-      name: "11_機能・仕様漏れ"
-    - alias: "d"
-      name: "12_機能・仕様誤り"
-    - alias: "e"
-      name: "21_設計・ドキュメント規約違反"
-    - alias: "f"
-      name: "22_記述誤り"
+  use_summary: false
+  named_ranges:
+    REVIEW_LIST_PHASE: ""
+    REVIEW_LIST_PHASE_SHEET: ""
+    REVIEW_LIST_PHASE_CELL: ""
 
 steps:
   - action: extract
     review_times: 1
 
 expected_messages:
-  - "C02"
-  - "I01"
+  - "E02"
+
+file_expectations:
+  - pattern: "システム機能設計書_サンプル_S13\\.xlsx"
+    assert_no_sheets: ["レビュー結果1回目"]

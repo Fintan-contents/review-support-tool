@@ -1,24 +1,41 @@
-viewpoint: "観点64: レビュー記録一覧ファイルが存在しない場合（E04）でエラーになり処理中断する"
+viewpoint: "E13: review_times=2 でカテゴリ変更時にエラーで中断する"
 instructions:
-  - "存在しないファイル名を review_list_file に指定する"
-  - "scenario_runner.py が work_dir 内の絶対パスを REVIEW_LIST_FILEPATH に設定するが、"
-  - "そのファイルは work_dir に存在しないため Dir() チェックが失敗し E04 が発火する"
-  - "検証: E04 がログに記録され、設計書に結果シートが生成されないこと"
+  - "Step1: 9カテゴリ（デフォルト）で review_times=1 を実行（レビュー結果1回目 row9 に a〜i を書き込み）"
+  - "Step2: 6カテゴリに変更して review_times=2 を実行 → E13 で中断"
+  - "検証: E13 メッセージがダイアログログに記録されていること"
+  - "検証: レビュー結果2回目 シートが作成されていないこと"
 
-# review_list_file に存在しないファイル名を指定 → FILEPATH がセットされるが
-# そのファイルが work_dir に存在しないため E04 発火
-# （E03 発火を回避するため REVIEW_LIST_SHEET は xlsm デフォルト値を維持する）
 setup:
-  use_summary: true
-  review_list_file: "存在しないファイル.xlsx"
+  use_review_record: false
+  use_summary: false
 
 steps:
+  # Step 1: 9カテゴリ（デフォルト）で1回目抽出 → レビュー結果1回目にrow9エイリアスを書き込む
   - action: extract
     review_times: 1
 
+  # Step 2: 6カテゴリに変更して2回目抽出 → row9 の不一致を検出し E13 で中断
+  - action: extract
+    review_times: 2
+    categories:
+      - alias: "a"
+        name: "01_要件漏れ"
+      - alias: "b"
+        name: "02_要件誤り"
+      - alias: "c"
+        name: "11_機能・仕様漏れ"
+      - alias: "d"
+        name: "12_機能・仕様誤り"
+      - alias: "e"
+        name: "21_設計・ドキュメント規約違反"
+      - alias: "f"
+        name: "22_記述誤り"
+
 expected_messages:
-  - "E04"
+  - "C02"  # 各ステップで設計書の抽出確認ダイアログ
+  - "I01"  # Step1 完了通知（Step2 は E13 で中断するため I01 なし）
+  - "E13"  # Step2: カテゴリ変更検出エラー
 
 file_expectations:
   - pattern: "システム機能設計書_サンプル_S30\\.xlsx"
-    assert_no_sheets: ["レビュー結果1回目"]
+    assert_no_sheets: ["レビュー結果2回目"]

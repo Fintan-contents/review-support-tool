@@ -1,26 +1,10 @@
-viewpoint: "観点47: カテゴリ減設定（9→6）でレビュー記録サマリ使用時、レビュー記録一覧のカテゴリヘッダーが設定数に削減される"
+viewpoint: "観点W06: 未登録カテゴリのコメントがエラーシートに記録され、他の有効コメントが正常に抽出される"
 instructions:
-  - "6カテゴリ設定 + レビュー記録サマリ使用 で抽出実行"
-  - "検証: レビュー記録一覧のカテゴリヘッダーが6列に削減されること"
-  - "template_assertions でテンプレートシートのカテゴリ列数（6）を自動検証"
-  - "Gold Master（レビュー記録サマリ_S23_expected.xlsx）は Windows 実行後に作成"
-
-setup:
-  use_summary: true
-  review_list_file: "レビュー記録サマリ_S23.xlsx"
-  categories:
-    - alias: "a"
-      name: "01_要件漏れ"
-    - alias: "b"
-      name: "02_要件誤り"
-    - alias: "c"
-      name: "11_機能・仕様漏れ"
-    - alias: "d"
-      name: "12_機能・仕様誤り"
-    - alias: "e"
-      name: "21_設計・ドキュメント規約違反"
-    - alias: "f"
-      name: "22_記述誤り"
+  - "入力: S01 の内容に加え、未登録カテゴリ z: のコメントを D50 に追加"
+  - "REVIEW_TIMES=1 で抽出実行"
+  - "検証: エラーシートに「未登録の指摘分類エイリアスが記入されています: z」が記録されること"
+  - "検証: a/b/c の有効コメントはレビュー結果1回目に正常に抽出されること"
+  - "Gold Master 比較で抽出出力の内容を検証（_expected.xlsx は Windows で実行後に作成）"
 
 steps:
   - action: extract
@@ -29,7 +13,3 @@ steps:
 expected_messages:
   - "C02"
   - "I01"
-
-template_assertions:
-  - sheet: "レビュー結果シートテンプレート"
-    category_count: 6
