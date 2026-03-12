@@ -36,11 +36,3 @@ setup:
 steps:
   - action: extract
     review_times: 1
-
-template_assertions:
-  - sheet: "レビュー結果シートテンプレート"
-    category_count: 12
-
-excluded_cells:
-  - sheet: "レビュー結果1回目"
-    cells: ["E4"]

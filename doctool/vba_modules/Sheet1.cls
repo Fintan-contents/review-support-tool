@@ -307,6 +307,53 @@ Public Sub CmdGen_Click_Core(Optional testMode As Boolean = False)
                 Exit Sub
             End If
             Set listSheet = reviewListBook.Worksheets(Range(IDX_REVIEW_LIST_SHEET).Value)
+            ' [E13] レビュー記録一覧の1行目（DETAIL_COL_LIST_CATEGORY_A〜）カテゴリエイリアスと現設定を照合
+            ' 初回転記時（行1が空）→ 現設定のエイリアスを書き込む
+            ' 2回目以降（行1に既存データあり）→ 不一致なら E13 で中断
+            Dim listRow1ExistAlias As String
+            listRow1ExistAlias = CStr(listSheet.Cells(1, DETAIL_COL_LIST_CATEGORY_A).Value)
+            If Len(listRow1ExistAlias) > 0 Then
+                ' 既存エイリアスリストを構築（カンマ区切り）
+                Dim listRow1Aliases As String
+                listRow1Aliases = ""
+                Dim listRow1Col As Long
+                listRow1Col = DETAIL_COL_LIST_CATEGORY_A
+                Dim listRow1Alias As String
+                Do
+                    listRow1Alias = CStr(listSheet.Cells(1, listRow1Col).Value)
+                    If Len(listRow1Alias) = 0 Then Exit Do
+                    If Len(listRow1Aliases) > 0 Then listRow1Aliases = listRow1Aliases & ","
+                    listRow1Aliases = listRow1Aliases & listRow1Alias
+                    listRow1Col = listRow1Col + 1
+                Loop
+                ' 現設定エイリアスリストを構築
+                Dim listCurrAliases As String
+                listCurrAliases = ""
+                Dim listCurrKey As Variant
+                For Each listCurrKey In categoryMappings.Keys
+                    If Len(listCurrAliases) > 0 Then listCurrAliases = listCurrAliases & ","
+                    listCurrAliases = listCurrAliases & CStr(listCurrKey)
+                Next listCurrKey
+                If listRow1Aliases <> listCurrAliases Then
+                    Dim listExistCatCount As Long
+                    listExistCatCount = listRow1Col - DETAIL_COL_LIST_CATEGORY_A
+                    MsgBox "カテゴリ設定が変更されました（" & listExistCatCount & "種類 → " & categoryMappings.Count & "種類）。" & _
+                           "既存のレビュー結果シートのカテゴリ構造と不整合になるため、処理を中断します。" & _
+                           "【対処方法】1. 設計書Excelの既存のレビュー結果シート（全て）を削除 2. 1回目のレビューから実行をやり直す", vbExclamation
+                    Application.ScreenUpdating = True
+                    Application.Cursor = xlDefault
+                    Exit Sub
+                End If
+            Else
+                ' 行1が空 → 現設定のエイリアスを初回書き込み
+                Dim listInitKey As Variant
+                Dim listInitIdx As Long
+                listInitIdx = 0
+                For Each listInitKey In categoryMappings.Keys
+                    listSheet.Cells(1, DETAIL_COL_LIST_CATEGORY_A + listInitIdx).Value = CStr(listInitKey)
+                    listInitIdx = listInitIdx + 1
+                Next listInitKey
+            End If
             ' [Phase3拡張] レビュー記録一覧の4行目カテゴリ列数を設定シートに合わせて調整する
             ' AB6のSUM式の参照範囲からカテゴリ列数を取得
             ' （4行目はカテゴリ列の右隣に"レビュー結果"等の非カテゴリ列も非空のため非空セルカウントは不適切）
@@ -860,6 +907,47 @@ Public Sub CmdGen_Click_Core(Optional testMode As Boolean = False)
                 End If
                 '出力シート名の決定
                 outputSheetName = OUTPUT_SHEETNAME_PREFIX & CStr(count) & OUTPUT_SHEETNAME_SUFFIX
+                ' [E13] 2回目以降: 既存の「レビュー結果1回目」シートのrow9カテゴリエイリアスと現設定を照合
+                ' （review_times=1 の場合は1回目の上書きなのでチェック不要）
+                If CLng(count) >= 2 Then
+                    Dim firstResultName As String
+                    firstResultName = OUTPUT_SHEETNAME_PREFIX & "1" & OUTPUT_SHEETNAME_SUFFIX
+                    If hasSheet(book, firstResultName) Then
+                        Dim firstResultSheet As Worksheet
+                        Set firstResultSheet = book.Worksheets(firstResultName)
+                        ' row9（ROW_CATEGORY-1）のエイリアスリストを構築
+                        Dim existSheetAliases As String
+                        existSheetAliases = ""
+                        Dim existSheetCol As Long
+                        existSheetCol = COL_CATEGORY_START
+                        Dim existSheetAlias As String
+                        Do
+                            existSheetAlias = CStr(firstResultSheet.Cells(ROW_CATEGORY - 1, existSheetCol).Value)
+                            If Len(existSheetAlias) = 0 Then Exit Do
+                            If Len(existSheetAliases) > 0 Then existSheetAliases = existSheetAliases & ","
+                            existSheetAliases = existSheetAliases & existSheetAlias
+                            existSheetCol = existSheetCol + 1
+                        Loop
+                        ' 現設定エイリアスリストを構築
+                        Dim currSheetAliases As String
+                        currSheetAliases = ""
+                        Dim currSheetKey As Variant
+                        For Each currSheetKey In categoryMappings.Keys
+                            If Len(currSheetAliases) > 0 Then currSheetAliases = currSheetAliases & ","
+                            currSheetAliases = currSheetAliases & CStr(currSheetKey)
+                        Next currSheetKey
+                        If existSheetAliases <> currSheetAliases Then
+                            Dim existSheetCatCount As Long
+                            existSheetCatCount = existSheetCol - COL_CATEGORY_START
+                            MsgBox "カテゴリ設定が変更されました（" & existSheetCatCount & "種類 → " & categoryMappings.Count & "種類）。" & _
+                                   "既存のレビュー結果シートのカテゴリ構造と不整合になるため、処理を中断します。" & _
+                                   "【対処方法】1. 設計書Excelの既存のレビュー結果シート（全て）を削除 2. 1回目のレビューから実行をやり直す", vbExclamation
+                            Application.ScreenUpdating = True
+                            Application.Cursor = xlDefault
+                            Exit Sub
+                        End If
+                    End If
+                End If
                 '既存のシートを削除
                 preDocId = ""
                 If hasSheet(book, outputSheetName) = True Then
@@ -898,6 +986,15 @@ Public Sub CmdGen_Click_Core(Optional testMode As Boolean = False)
                 output.Cells(ROW_DOC_ID, COL_DOC_ID) = docId
                 output.Cells(ROW_TARGET, COL_TARGET) = target
                 output.Cells(ROW_COUNT, COL_COUNT) = count
+                ' [E13] レビュー結果シートのrow9（ROW_CATEGORY-1）にカテゴリエイリアスを書き込む
+                ' （E13チェック時の照合キーとして使用する）
+                Dim outCatAliasKey As Variant
+                Dim outCatAliasIdx As Long
+                outCatAliasIdx = 0
+                For Each outCatAliasKey In categoryMappings.Keys
+                    output.Cells(ROW_CATEGORY - 1, COL_CATEGORY_START + outCatAliasIdx).Value = CStr(outCatAliasKey)
+                    outCatAliasIdx = outCatAliasIdx + 1
+                Next outCatAliasKey
                 'エラーシートが既にある場合は削除
                 If hasSheet(book, OUTPUT_ERR_SHEETNAME) = True Then
                     Application.DisplayAlerts = False
