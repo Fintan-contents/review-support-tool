@@ -915,15 +915,21 @@ Public Sub CmdGen_Click_Core(Optional testMode As Boolean = False)
                         Do While Len(CStr(firstResultSheet.Cells(7, COL_CATEGORY_START + existSheetCatCount).Value)) > 0
                             existSheetCatCount = existSheetCatCount + 1
                         Loop
-                        ' categoryMappingsと直接比較（件数→エイリアス順序）
+                        ' categoryMappingsと直接比較（件数→エイリアス順序→カテゴリ名）
                         Dim catChanged As Boolean
                         catChanged = (existSheetCatCount <> categoryMappings.Count)
                         If Not catChanged Then
                             Dim currKeys() As Variant
+                            Dim currVals() As Variant
                             currKeys = categoryMappings.Keys
+                            currVals = categoryMappings.Items
                             Dim aliasIdx As Long
                             For aliasIdx = 0 To existSheetCatCount - 1
                                 If CStr(firstResultSheet.Cells(7, COL_CATEGORY_START + aliasIdx).Value) <> CStr(currKeys(aliasIdx)) Then
+                                    catChanged = True
+                                    Exit For
+                                End If
+                                If CStr(firstResultSheet.Cells(8, COL_CATEGORY_START + aliasIdx).Value) <> CStr(currVals(aliasIdx)) Then
                                     catChanged = True
                                     Exit For
                                 End If
