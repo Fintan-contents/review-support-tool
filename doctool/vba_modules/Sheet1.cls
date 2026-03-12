@@ -908,29 +908,21 @@ Public Sub CmdGen_Click_Core(Optional testMode As Boolean = False)
                     If hasSheet(book, firstResultName) Then
                         Dim firstResultSheet As Worksheet
                         Set firstResultSheet = book.Worksheets(firstResultName)
-                        ' ROW_CATEGORY行のSUM式を持つ計列を検索してカテゴリ数を取得
-                        ' （row9はCOUNTIF式があるため使用せず、SUM式の位置からカテゴリ数を算出）
-                        Dim existSumifCol As Long
-                        existSumifCol = COL_CATEGORY_START
-                        Do
-                            If firstResultSheet.Cells(ROW_CATEGORY, existSumifCol).HasFormula Then
-                                If Left(firstResultSheet.Cells(ROW_CATEGORY, existSumifCol).Formula, 5) = "=SUM(" Then Exit Do
-                            End If
-                            existSumifCol = existSumifCol + 1
-                            If existSumifCol > COL_CATEGORY_START + 50 Then Exit Do  ' 安全上限
-                        Loop
-                        Dim existSheetCatCount As Long
-                        existSheetCatCount = existSumifCol - COL_CATEGORY_START
-                        ' 行7（Phase3が書き込んだエイリアス行）からエイリアスリストを構築
+                        ' 行7（Phase3がエイリアス専用に使用する行）を左から走査してエイリアスリストを構築
+                        ' エイリアスは1文字以上の文字列のため、空セルが終端を示す
                         Dim existSheetAliases As String
                         existSheetAliases = ""
                         Dim existSheetCol As Long
-                        Dim existSheetAlias As String
-                        For existSheetCol = COL_CATEGORY_START To COL_CATEGORY_START + existSheetCatCount - 1
+                        existSheetCol = COL_CATEGORY_START
+                        Do While Len(CStr(firstResultSheet.Cells(7, existSheetCol).Value)) > 0
+                            Dim existSheetAlias As String
                             existSheetAlias = CStr(firstResultSheet.Cells(7, existSheetCol).Value)
                             If Len(existSheetAliases) > 0 Then existSheetAliases = existSheetAliases & ","
                             existSheetAliases = existSheetAliases & existSheetAlias
-                        Next existSheetCol
+                            existSheetCol = existSheetCol + 1
+                        Loop
+                        Dim existSheetCatCount As Long
+                        existSheetCatCount = existSheetCol - COL_CATEGORY_START
                         ' 現設定エイリアスリストを構築
                         Dim currSheetAliases As String
                         currSheetAliases = ""

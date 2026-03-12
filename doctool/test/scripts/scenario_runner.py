@@ -387,14 +387,7 @@ def _execute_vba(
                     print(f"[{scenario_name}]   マクロ実行中 (run {run_num + 1}/{repeat})...")
                     macro(test_mode)
                     if test_mode:
-                        dialog_log = xlsm_wb.macro("Module2.GetDialogLog")()
-                        if dialog_log:
-                            log_path = work_dir / DIALOG_LOG_FILENAME
-                            with open(log_path, "a", encoding="utf-8") as f:
-                                f.write(dialog_log + "\n")
-                            for line in dialog_log.split("\n"):
-                                if line:
-                                    print(f"[{scenario_name}]   [LOG] {line}")
+                        _flush_dialog_log(scenario_name, xlsm_wb, work_dir)
 
             elif action == "delete_comments":
                 print(f"[{scenario_name}] Step {step_idx}: delete_comments")
@@ -452,25 +445,30 @@ def _apply_categories(
     print(f"[{scenario_name}] categories: {len(categories)} カテゴリを設定 ({[c['alias'] for c in categories]})")
 
 
+def _flush_dialog_log(scenario_name: str, xlsm_wb, work_dir: Path) -> None:
+    """VBA ダイアログログを dialog_log.txt に追記し、コンソールにも出力する。"""
+    dialog_log = xlsm_wb.macro("Module2.GetDialogLog")()
+    if dialog_log:
+        log_path = work_dir / DIALOG_LOG_FILENAME
+        with open(log_path, "a", encoding="utf-8") as f:
+            f.write(dialog_log + "\n")
+        for line in dialog_log.split("\n"):
+            if line:
+                print(f"[{scenario_name}]   [LOG] {line}")
+
+
 def _run_delete_macro(
     scenario_name: str,
     xlsm_wb,
     macro_path: str,
     test_mode: bool,
-    work_dir: Path | None = None,
+    work_dir: Path,
 ) -> None:
     """削除系マクロを実行する。"""
     try:
         xlsm_wb.macro("Module2.ClearDialogLog")()
         xlsm_wb.macro(macro_path)(test_mode)
-        dialog_log = xlsm_wb.macro("Module2.GetDialogLog")()
-        if dialog_log:
-            if work_dir is not None:
-                log_path = work_dir / DIALOG_LOG_FILENAME
-                with open(log_path, "a", encoding="utf-8") as f:
-                    f.write(dialog_log + "\n")
-            for line in dialog_log.split("\n"):
-                print(f"[{scenario_name}]     {line}")
+        _flush_dialog_log(scenario_name, xlsm_wb, work_dir)
     except Exception as e:
         print(f"[{scenario_name}]   Warning: {e}")
 
