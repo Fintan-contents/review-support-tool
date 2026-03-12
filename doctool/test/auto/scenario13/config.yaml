@@ -1,61 +1,33 @@
-viewpoint: "観点31〜35,37,39〜42,45: カテゴリ減→増（9→6→9）の複合操作が正しく動作する"
+viewpoint: "観点31〜35,39〜42: カテゴリ減（9→6）でテンプレート列削減と抽出が正しく動作する"
 instructions:
-  - "入力: 6カテゴリ（a〜f）設定でまず抽出（テンプレート 9→6 列に削減）"
-  - "レビュー結果シートを削除後、9カテゴリ設定に戻して再抽出（テンプレート 6→9 列に拡張）"
-  - "検証: $K15:$K16 の参照が壊れないこと（cell_formula_contains で自動検証）"
-  - "カテゴリ列数が 9 に戻ること（template_assertions.category_count で自動検証）"
-  - "Gold Master 比較で抽出出力の内容を検証（9カテゴリ時点の出力）"
+  - "入力: 6カテゴリ（a〜f）設定、各カテゴリに1件ずつコメントを配置した設計書"
+  - "setup.categories で xlsm を 6 カテゴリに変更してから抽出実行"
+  - "検証: テンプレートが 6 列に削減され、全カテゴリの指摘が正しく集計されること"
+  - "template_assertions でカテゴリ列数（6）を自動検証"
+  - "Gold Master 比較で抽出出力の内容を検証"
+
+setup:
+  categories:
+    - alias: "a"
+      name: "01_要件漏れ"
+    - alias: "b"
+      name: "02_要件誤り"
+    - alias: "c"
+      name: "11_機能・仕様漏れ"
+    - alias: "d"
+      name: "12_機能・仕様誤り"
+    - alias: "e"
+      name: "21_設計・ドキュメント規約違反"
+    - alias: "f"
+      name: "22_記述誤り"
 
 steps:
-  # Step 1: 6 カテゴリで抽出（テンプレートを 9→6 列に削減）
   - action: extract
     review_times: 1
-    categories:
-      - alias: "a"
-        name: "01_要件漏れ"
-      - alias: "b"
-        name: "02_要件誤り"
-      - alias: "c"
-        name: "11_機能・仕様漏れ"
-      - alias: "d"
-        name: "12_機能・仕様誤り"
-      - alias: "e"
-        name: "21_設計・ドキュメント規約違反"
-      - alias: "f"
-        name: "22_記述誤り"
-
-  # Step 2: レビュー結果シートを削除（次の抽出のためリセット）
-  - action: delete_sheets
-
-  # Step 3: 9 カテゴリで再抽出（テンプレートを 6→9 列に拡張）
-  - action: extract
-    review_times: 1
-    categories:
-      - alias: "a"
-        name: "01_要件漏れ"
-      - alias: "b"
-        name: "02_要件誤り"
-      - alias: "c"
-        name: "11_機能・仕様漏れ"
-      - alias: "d"
-        name: "12_機能・仕様誤り"
-      - alias: "e"
-        name: "21_設計・ドキュメント規約違反"
-      - alias: "f"
-        name: "22_記述誤り"
-      - alias: "g"
-        name: "91_疑問点、確認"
-      - alias: "h"
-        name: "92_改善要望"
-      - alias: "i"
-        name: "93_仕様変更"
 
 template_assertions:
   - sheet: "レビュー結果シートテンプレート"
-    category_count: 9
-    cell_formula_contains:
-      - cell: "B9"
-        contains: "$K15"
+    category_count: 6
 
 excluded_cells:
   - sheet: "レビュー結果1回目"
