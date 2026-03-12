@@ -1,4 +1,4 @@
-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 'testMode時のダイアログログ用変数
 Private dialogLog As String
 
@@ -12,13 +12,32 @@ Public Sub ClearDialogLog()
     dialogLog = ""
 End Sub
 
-'ダイアログログに追加（testMode時のみ）
+'ダイアログログに追加（内部用）
 Private Sub LogDialog(message As String)
     If dialogLog <> "" Then
         dialogLog = dialogLog & vbCrLf
     End If
     dialogLog = dialogLog & message
 End Sub
+
+'testMode対応のメッセージ表示関数
+'  testMode=True : MsgBox を表示せず [MSG:{msgId}] をダイアログログに記録し defaultReturn を返す
+'  testMode=False: 通常の MsgBox を表示し、ユーザーの選択結果を返す
+'戻り値: vbOK / vbYes / vbNo など（MsgBoxと同じ値）
+Public Function ShowMsg( _
+    testMode As Boolean, _
+    msgId As String, _
+    msg As String, _
+    Optional msgType As Long = vbInformation, _
+    Optional defaultReturn As Long = vbOK _
+) As Long
+    If testMode Then
+        LogDialog "[MSG:" & msgId & "] " & msg
+        ShowMsg = defaultReturn
+    Else
+        ShowMsg = MsgBox(msg, msgType)
+    End If
+End Function
 
 Sub DelAllReviewComments_Click()
     'UIボタンから呼ばれる場合はtestMode=False
@@ -60,12 +79,8 @@ Public Sub DelAllReviewComments_Click_Core(Optional testMode As Boolean = False)
         'ファイル名に正規表現パターンマッチを行い対象ファイルを抽出
         If targetBookNamePattern.test(book.Name) And Not noTargetBookNamePattern.test(book.Name) Then
             fileCount = fileCount + 1
-            If Not testMode Then
-                If MsgBox(book.Name & " のメモを削除してよろしいですか？", vbYesNo, vbInformation) = vbNo Then
-                    GoTo NEXTBOOK
-                End If
-            Else
-                LogDialog "[DIALOG] " & book.Name & " のメモを削除してよろしいですか？"
+            If ShowMsg(testMode, "C04", book.Name & " のメモを削除してよろしいですか？", vbYesNo, vbYes) = vbNo Then
+                GoTo NEXTBOOK
             End If
             For Each s In book.Worksheets
                 For Each cmnt In s.comments
@@ -82,22 +97,12 @@ Public Sub DelAllReviewComments_Click_Core(Optional testMode As Boolean = False)
                     End If
                 Next cmnt
             Next s
-            If Not testMode Then
-                MsgBox book.Name & " のメモを削除しました。", vbInformation
-            Else
-                LogDialog "[INFO] " & book.Name & " のメモを削除しました。"
-            End If
+            ShowMsg testMode, "I02", book.Name & " のメモを削除しました。", vbInformation
         End If
 NEXTBOOK:
     Next book
-    If Not testMode Then
-        If fileCount = 0 Then
-            MsgBox "メモ削除対象のファイルはありませんでした。", vbExclamation
-        End If
-    Else
-        If fileCount = 0 Then
-            LogDialog "[INFO] メモ削除対象のファイルはありませんでした。"
-        End If
+    If fileCount = 0 Then
+        ShowMsg testMode, "E09", "メモ削除対象のファイルはありませんでした。", vbExclamation
     End If
     Application.ScreenUpdating = True
     Application.Cursor = xlDefault
@@ -133,34 +138,20 @@ Public Sub DelAllReviewResultSheets_Click_Core(Optional testMode As Boolean = Fa
         'ファイル名に正規表現パターンマッチを行い対象ファイルを抽出
         If targetBookNamePattern.test(book.Name) And Not noTargetBookNamePattern.test(book.Name) Then
             fileCount = fileCount + 1
-            If Not testMode Then
-                If MsgBox(book.Name & " のレビュー結果シートを削除してよろしいですか？", vbYesNo, vbInformation) = vbNo Then
-                    GoTo NEXTBOOK
-                End If
-            Else
-                LogDialog "[DIALOG] " & book.Name & " のレビュー結果シートを削除してよろしいですか？"
+            If ShowMsg(testMode, "C05", book.Name & " のレビュー結果シートを削除してよろしいですか？", vbYesNo, vbYes) = vbNo Then
+                GoTo NEXTBOOK
             End If
             For Each s In book.Worksheets
                 If (InStr(s.Name, "レビュー結果") > 0 And InStr(s.Name, "回目") > 0) Or s.Name = "エラーシート" Then
                 s.Delete
             End If
         Next s
-        If Not testMode Then
-            MsgBox book.Name & " のレビュー結果シートを削除しました。", vbInformation
-        Else
-            LogDialog "[INFO] " & book.Name & " のレビュー結果シートを削除しました。"
-        End If
+        ShowMsg testMode, "I03", book.Name & " のレビュー結果シートを削除しました。", vbInformation
     End If
 NEXTBOOK:
 Next book
-If Not testMode Then
-    If fileCount = 0 Then
-        MsgBox "レビュー結果シート削除対象のファイルはありませんでした。", vbExclamation
-    End If
-Else
-    If fileCount = 0 Then
-        LogDialog "[INFO] レビュー結果シート削除対象のファイルはありませんでした。"
-    End If
+If fileCount = 0 Then
+    ShowMsg testMode, "E10", "レビュー結果シート削除対象のファイルはありませんでした。", vbExclamation
 End If
 Application.DisplayAlerts = True
 Application.ScreenUpdating = True

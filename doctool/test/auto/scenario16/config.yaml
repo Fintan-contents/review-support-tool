@@ -1,0 +1,39 @@
+viewpoint: "E13: review_times=2 でカテゴリ変更時にエラーで中断する"
+instructions:
+  - "Step1: 9カテゴリ（デフォルト）で review_times=1 を実行（レビュー結果1回目 row9 に a〜i を書き込み）"
+  - "Step2: 6カテゴリに変更して review_times=2 を実行 → E13 で中断"
+  - "検証: E13 メッセージがダイアログログに記録されていること"
+  - "検証: レビュー結果2回目 シートが作成されていないこと"
+
+setup:
+  use_review_record: false
+  use_summary: false
+
+steps:
+  # Step 1: 9カテゴリ（デフォルト）で1回目抽出 → レビュー結果1回目にrow9エイリアスを書き込む
+  - action: extract
+    review_times: 1
+
+  # Step 2: 6カテゴリに変更して2回目抽出 → row9 の不一致を検出し E13 で中断
+  - action: extract
+    review_times: 2
+    categories:
+      - alias: "a"
+        name: "01_要件漏れ"
+      - alias: "b"
+        name: "02_要件誤り"
+      - alias: "c"
+        name: "11_機能・仕様漏れ"
+      - alias: "d"
+        name: "12_機能・仕様誤り"
+      - alias: "e"
+        name: "21_設計・ドキュメント規約違反"
+      - alias: "f"
+        name: "22_記述誤り"
+
+expected_messages:
+  - "E13"
+
+file_expectations:
+  - pattern: "システム機能設計書_サンプル_S16\\.xlsx"
+    assert_no_sheets: ["レビュー結果2回目"]

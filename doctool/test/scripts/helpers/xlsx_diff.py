@@ -80,6 +80,15 @@ def _normalize_fill(cell) -> str:
     return pt
 
 
+def _get_col_widths(ws) -> dict[str, float]:
+    """明示的に設定された列幅を {列文字: 幅} で返す。幅未設定列は含まない。"""
+    widths = {}
+    for col_letter, col_dim in ws.column_dimensions.items():
+        if col_dim.width is not None:
+            widths[col_letter] = round(col_dim.width, 1)
+    return widths
+
+
 def compare_workbooks(
     actual_path: str,
     expected_path: str,
@@ -87,6 +96,8 @@ def compare_workbooks(
     excluded_cells: Optional[list[dict]] = None,
     ignore_format: bool = True,
     compare_fill: bool = False,
+    compare_col_widths: bool = False,
+    compare_print_area: bool = False,
     max_diffs: int = 10
 ) -> DiffResult:
     """2つのxlsxファイルをセル値ベースで比較する
@@ -100,6 +111,8 @@ def compare_workbooks(
             毎回変わる実施日時などのセルに使用する
         ignore_format: フォーマット（色・罫線等）を無視（現在は常にTrue）
         compare_fill: Trueの場合、セルの背景色（塗りつぶし）も比較する
+        compare_col_widths: Trueの場合、明示設定された列幅を比較する
+        compare_print_area: Trueの場合、印刷範囲を比較する
         max_diffs: 報告する差分の最大数（デバッグ容易性のため制限）
 
     Returns:
@@ -206,6 +219,40 @@ def compare_workbooks(
         if len(diffs) >= max_diffs:
             diffs.append(f"... (差分数が{max_diffs}件を超えたため省略)")
             break
+
+        # 列幅の比較（明示設定列のみ）
+        if compare_col_widths and len(diffs) < max_diffs:
+            aw_widths = _get_col_widths(aws)
+            ew_widths = _get_col_widths(ews)
+            all_cols = sorted(set(aw_widths) | set(ew_widths))
+            for col_letter in all_cols:
+                aw_w = aw_widths.get(col_letter)
+                ew_w = ew_widths.get(col_letter)
+                # expected側が設定済みの列のみ比較（expected未設定はデフォルト幅なので無視）
+                if ew_w is not None:
+                    actual_w = aw_w if aw_w is not None else 0.0
+                    if abs(actual_w - ew_w) > 0.2:
+                        diffs.append(
+                            f"[{sheet_name}] Column {col_letter} width:"
+                            f" actual={actual_w} != expected={ew_w}"
+                        )
+                        if len(diffs) >= max_diffs:
+                            diffs.append(f"... (差分数が{max_diffs}件を超えたため省略)")
+                            break
+            else:
+                if ew_widths:
+                    print(f"  ✓ [{sheet_name}] column widths OK")
+
+        # 印刷範囲の比較
+        if compare_print_area and len(diffs) < max_diffs:
+            actual_pa = str(aws.print_area) if aws.print_area else ""
+            expected_pa = str(ews.print_area) if ews.print_area else ""
+            if actual_pa != expected_pa:
+                diffs.append(
+                    f"[{sheet_name}] Print area: actual='{actual_pa}' != expected='{expected_pa}'"
+                )
+            elif expected_pa:
+                print(f"  ✓ [{sheet_name}] print_area = '{expected_pa}'")
 
     # sheets=None（全シート比較モード）のとき、
     # actual にあって expected にない余分なシートを検出する

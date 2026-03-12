@@ -229,7 +229,7 @@ Public Sub CmdGen_Click_Core(Optional testMode As Boolean = False)
     If Right(reviewListFilepath, 1) = Chr(34) Then reviewListFilepath = Left(reviewListFilepath, Len(reviewListFilepath) - 1)
     If useSimpleSummary And Len(reviewListFilepath) = 0 Then
         isCopyReviewList = False
-        MsgBox "レビュー記録一覧のファイルパスが未入力です。", vbExclamation
+        Module2.ShowMsg testMode, "E01", "レビュー記録一覧のファイルパスが未入力です。", vbExclamation
         Application.ScreenUpdating = True
         Application.Cursor = xlDefault
         Exit Sub
@@ -246,7 +246,7 @@ Public Sub CmdGen_Click_Core(Optional testMode As Boolean = False)
         If ((Len(reviewListPhase) = 0 And (Len(reviewListPhaseSheet) = 0 Or Len(reviewListPhaseCell) = 0)) _
             Or (Len(reviewListReviewer) = 0 And (Len(reviewListReviewerSheet) = 0 Or Len(reviewListReviewerCell) = 0)) _
             Or (Len(reviewListReviewee) = 0 And (Len(reviewListRevieweeSheet) = 0 Or Len(reviewListRevieweeCell) = 0))) Then
-            MsgBox "一覧への反映値が未入力です。固定値または、成果物のシート名とセルのどちらかを指定してください。", vbExclamation
+            Module2.ShowMsg testMode, "E02", "一覧への反映値が未入力です。固定値または、成果物のシート名とセルのどちらかを指定してください。", vbExclamation
             Application.ScreenUpdating = True
             Application.Cursor = xlDefault
             Exit Sub
@@ -254,7 +254,7 @@ Public Sub CmdGen_Click_Core(Optional testMode As Boolean = False)
         If useSimpleSummary Then
             reviewListSheet = Range(IDX_REVIEW_LIST_SHEET).Value
             If Len(reviewListSheet) = 0 Then
-                MsgBox "レビュー記録一覧のシート名が未入力です。", vbExclamation
+                Module2.ShowMsg testMode, "E03", "レビュー記録一覧のシート名が未入力です。", vbExclamation
                 Application.ScreenUpdating = True
                 Application.Cursor = xlDefault
                 Exit Sub
@@ -263,7 +263,7 @@ Public Sub CmdGen_Click_Core(Optional testMode As Boolean = False)
             'レビュー一覧を既に開いているかどうか
             reviewListFileNm = Dir(reviewListFilepath)
             If Len(reviewListFileNm) = 0 Then
-                MsgBox "レビュー記録一覧ファイルが存在しません。", vbExclamation
+                Module2.ShowMsg testMode, "E04", "レビュー記録一覧ファイルが存在しません。", vbExclamation
                 Application.ScreenUpdating = True
                 Application.Cursor = xlDefault
                 Exit Sub
@@ -274,12 +274,10 @@ Public Sub CmdGen_Click_Core(Optional testMode As Boolean = False)
                     If reviewListBook.Saved = False Then
                         '一旦閉じて開きなおす
                         '保存確認
-                        If Not testMode Then
-                            If MsgBox("レビュー記録一覧を一旦閉じて開き直します。編集中の内容は保存されます。" & vbCrLf & "処理を続行してよろしいですか？", vbYesNo, vbInformation) = vbNo Then
-                                Application.ScreenUpdating = True
-                                Application.Cursor = xlDefault
-                                Exit Sub
-                            End If
+                        If Module2.ShowMsg(testMode, "C01", "レビュー記録一覧を一旦閉じて開き直します。編集中の内容は保存されます。" & vbCrLf & "処理を続行してよろしいですか？", vbYesNo, vbYes) = vbNo Then
+                            Application.ScreenUpdating = True
+                            Application.Cursor = xlDefault
+                            Exit Sub
                         End If
                     End If
                     'ブックを保存して閉じる
@@ -301,7 +299,7 @@ Public Sub CmdGen_Click_Core(Optional testMode As Boolean = False)
             Set reviewListBook = Workbooks.Open(Filename:=reviewListFilepath, UpdateLinks:=0, IgnoreReadOnlyRecommended:=True)
             'シートが存在するか
             If hasSheet(reviewListBook, Range(IDX_REVIEW_LIST_SHEET).Value) = False Then
-                MsgBox "レビュー記録一覧ファイルに指定されたシートが存在しません。", vbExclamation
+                Module2.ShowMsg testMode, "E05", "レビュー記録一覧ファイルに指定されたシートが存在しません。", vbExclamation
                 Application.ScreenUpdating = True
                 Application.Cursor = xlDefault
                 Exit Sub
@@ -337,9 +335,10 @@ Public Sub CmdGen_Click_Core(Optional testMode As Boolean = False)
                 If listRow1Aliases <> listCurrAliases Then
                     Dim listExistCatCount As Long
                     listExistCatCount = listRow1Col - DETAIL_COL_LIST_CATEGORY_A
-                    MsgBox "カテゴリ設定が変更されました（" & listExistCatCount & "種類 → " & categoryMappings.Count & "種類）。" & _
-                           "既存のレビュー結果シートのカテゴリ構造と不整合になるため、処理を中断します。" & _
-                           "【対処方法】1. 設計書Excelの既存のレビュー結果シート（全て）を削除 2. 1回目のレビューから実行をやり直す", vbExclamation
+                    Module2.ShowMsg testMode, "E13", _
+                        "カテゴリ設定が変更されました（" & listExistCatCount & "種類 → " & categoryMappings.Count & "種類）。" & _
+                        "既存のレビュー結果シートのカテゴリ構造と不整合になるため、処理を中断します。" & _
+                        "【対処方法】1. 設計書Excelの既存のレビュー結果シート（全て）を削除 2. 1回目のレビューから実行をやり直す", vbExclamation
                     Application.ScreenUpdating = True
                     Application.Cursor = xlDefault
                     Exit Sub
@@ -800,17 +799,13 @@ Public Sub CmdGen_Click_Core(Optional testMode As Boolean = False)
         'ファイル名に正規表現パターンマッチを行い対象ファイルを抽出
         If targetBookNamePattern.test(book.Name) And Not noTargetBookNamePattern.test(book.Name) Then
             '処理実施確認
-            If testMode Then
-                res = vbYes
-            Else
-                res = MsgBox(book.Name & "のレビュー内容を抽出しますか？", vbYesNoCancel, 確認)
-                If res = vbCancel Then
-                    MsgBox "以降の処理を中止します。" 'それまでの処理をキャンセルはできないので「以降の処理を中止」
-                    Exit For
-                ElseIf res = vbNo Then
-                    '処理スキップ
-                    GoTo NEXTBOOK
-                End If
+            res = Module2.ShowMsg(testMode, "C02", book.Name & "のレビュー内容を抽出しますか？", vbYesNoCancel, vbYes)
+            If res = vbCancel Then
+                Module2.ShowMsg testMode, "C03", "以降の処理を中止します。", vbInformation 'それまでの処理をキャンセルはできないので「以降の処理を中止」
+                Exit For
+            ElseIf res = vbNo Then
+                '処理スキップ
+                GoTo NEXTBOOK
             End If
             If res = vbYes Then
                 '基本情報
@@ -829,9 +824,7 @@ Public Sub CmdGen_Click_Core(Optional testMode As Boolean = False)
                         End If
                     Next bookTemp
                     If Not bookTempSelected Then
-                        If Not testMode Then
-                            MsgBox book.Name & " に対応するレビュー記録票が開いていません。", vbExclamation
-                        End If
+                        Module2.ShowMsg testMode, "W01", book.Name & " に対応するレビュー記録票が開いていません。", vbExclamation
                         Application.ScreenUpdating = True
                         Application.Cursor = xlDefault
                         GoTo NEXTBOOK
@@ -839,7 +832,7 @@ Public Sub CmdGen_Click_Core(Optional testMode As Boolean = False)
                     '転記先シートの取得
                     If Not mappingHeaderSheet = "" Then
                         If Not hasSheet(bookTemp, mappingHeaderSheet) Then
-                            MsgBox "レビュー記録票に" & mappingHeaderSheet & " シートが存在しません。", vbExclamation
+                            Module2.ShowMsg testMode, "E06", "レビュー記録票に" & mappingHeaderSheet & " シートが存在しません。", vbExclamation
                             Application.ScreenUpdating = True
                             Application.Cursor = xlDefault
                             Exit Sub
@@ -848,7 +841,7 @@ Public Sub CmdGen_Click_Core(Optional testMode As Boolean = False)
                     End If
                     If Not mappingSummarySheet = "" Then
                         If Not hasSheet(bookTemp, mappingSummarySheet) Then
-                            MsgBox "レビュー記録票に" & mappingSummarySheet & " シートが存在しません。", vbExclamation
+                            Module2.ShowMsg testMode, "E06", "レビュー記録票に" & mappingSummarySheet & " シートが存在しません。", vbExclamation
                             Application.ScreenUpdating = True
                             Application.Cursor = xlDefault
                             Exit Sub
@@ -857,7 +850,7 @@ Public Sub CmdGen_Click_Core(Optional testMode As Boolean = False)
                     End If
                     If Not mappingListSheet = "" Then
                         If Not hasSheet(bookTemp, mappingListSheet) Then
-                            MsgBox "レビュー記録票に" & mappingListSheet & " シートが存在しません。", vbExclamation
+                            Module2.ShowMsg testMode, "E06", "レビュー記録票に" & mappingListSheet & " シートが存在しません。", vbExclamation
                             Application.ScreenUpdating = True
                             Application.Cursor = xlDefault
                             Exit Sub
@@ -869,13 +862,13 @@ Public Sub CmdGen_Click_Core(Optional testMode As Boolean = False)
                         For postingSummaryRow = mappingSummaryStartRow To (mappingSummaryStartRow + 100)
                             If postingSummaryOutput.Range(mappingSummaryCount & CStr(postingSummaryRow)).Value = "" Or postingSummaryOutput.Range(mappingSummaryCount & CStr(postingSummaryRow)).Value = CStr(count) Then
                                 If count > 1 And Not postingSummaryOutput.Range(mappingSummaryCount & CStr(postingSummaryRow - 1)).Value = CStr(count - 1) Then
-                                    MsgBox "指定されたレビュー回数が正しくありません。", vbExclamation
+                                    Module2.ShowMsg testMode, "E07", "指定されたレビュー回数が正しくありません。", vbExclamation
                                     Application.ScreenUpdating = True
                                     Application.Cursor = xlDefault
                                     Exit Sub
                                 End If
                                 If postingSummaryOutput.Range(mappingSummaryCount & CStr(postingSummaryRow)).Value = CStr(count) And Not postingSummaryOutput.Range(mappingSummaryCount & CStr(postingSummaryRow + 1)).Value = "" Then
-                                    MsgBox "指定されたレビュー回数が正しくありません。", vbExclamation
+                                    Module2.ShowMsg testMode, "E07", "指定されたレビュー回数が正しくありません。", vbExclamation
                                     Application.ScreenUpdating = True
                                     Application.Cursor = xlDefault
                                     Exit Sub
@@ -939,9 +932,10 @@ Public Sub CmdGen_Click_Core(Optional testMode As Boolean = False)
                         If existSheetAliases <> currSheetAliases Then
                             Dim existSheetCatCount As Long
                             existSheetCatCount = existSheetCol - COL_CATEGORY_START
-                            MsgBox "カテゴリ設定が変更されました（" & existSheetCatCount & "種類 → " & categoryMappings.Count & "種類）。" & _
-                                   "既存のレビュー結果シートのカテゴリ構造と不整合になるため、処理を中断します。" & _
-                                   "【対処方法】1. 設計書Excelの既存のレビュー結果シート（全て）を削除 2. 1回目のレビューから実行をやり直す", vbExclamation
+                            Module2.ShowMsg testMode, "E13", _
+                                "カテゴリ設定が変更されました（" & existSheetCatCount & "種類 → " & categoryMappings.Count & "種類）。" & _
+                                "既存のレビュー結果シートのカテゴリ構造と不整合になるため、処理を中断します。" & _
+                                "【対処方法】1. 設計書Excelの既存のレビュー結果シート（全て）を削除 2. 1回目のレビューから実行をやり直す", vbExclamation
                             Application.ScreenUpdating = True
                             Application.Cursor = xlDefault
                             Exit Sub
@@ -1311,7 +1305,7 @@ Public Sub CmdGen_Click_Core(Optional testMode As Boolean = False)
                 If checkReference(book, reviewListPhaseSheet, reviewListPhaseCell) Then
                     phase = book.Worksheets(reviewListPhaseSheet).Range(reviewListPhaseCell).Value
                 Else
-                    MsgBox """工程""を成果物から取得できません。指定したシート名、セルを確認してください。抽出処理は続行します。"
+                    Module2.ShowMsg testMode, "W02", """工程""を成果物から取得できません。指定したシート名、セルを確認してください。抽出処理は続行します。"
                     phase = "取得できませんでした"
                 End If
             End If
@@ -1321,7 +1315,7 @@ Public Sub CmdGen_Click_Core(Optional testMode As Boolean = False)
                 If checkReference(book, reviewListReviewerSheet, reviewListReviewerCell) Then
                     listReviewer = book.Worksheets(reviewListReviewerSheet).Range(reviewListReviewerCell).Value
                 Else
-                    MsgBox """レビュア""を成果物から取得できません。指定したシート名、セルを確認してください。抽出処理は続行します。"
+                    Module2.ShowMsg testMode, "W03", """レビュア""を成果物から取得できません。指定したシート名、セルを確認してください。抽出処理は続行します。"
                     listReviewer = "取得できませんでした"
                 End If
             End If
@@ -1331,7 +1325,7 @@ Public Sub CmdGen_Click_Core(Optional testMode As Boolean = False)
                 If checkReference(book, reviewListRevieweeSheet, reviewListRevieweeCell) Then
                     listReviewee = book.Worksheets(reviewListRevieweeSheet).Range(reviewListRevieweeCell).Value
                 Else
-                    MsgBox """作成者・レビュイ""を成果物から取得できません。指定したシート名、セルを確認してください。抽出処理は続行します。"
+                    Module2.ShowMsg testMode, "W04", """作成者・レビュイ""を成果物から取得できません。指定したシート名、セルを確認してください。抽出処理は続行します。"
                     listReviewee = "取得できませんでした"
                 End If
             End If
@@ -1442,18 +1436,14 @@ Public Sub CmdGen_Click_Core(Optional testMode As Boolean = False)
 NEXTBOOK:
     Next book
     Application.Cursor = xlDefault
-    If Not testMode Then
-        If fileCount = 0 Then
-            MsgBox "レビュー対象文書が見つかりません。", vbExclamation, "エラー"
-        Else
-            MsgBox "レビュー結果の抽出が完了しました。" & vbCrLf & vbCrLf & "処理ファイル数:" & fileCount & "件", vbInformation
-        End If
+    If fileCount = 0 Then
+        Module2.ShowMsg testMode, "E08", "レビュー対象文書が見つかりません。", vbExclamation
+    Else
+        Module2.ShowMsg testMode, "I01", "レビュー結果の抽出が完了しました。" & vbCrLf & vbCrLf & "処理ファイル数:" & fileCount & "件", vbInformation
     End If
     Exit Sub
 ERROR:
-    If Not testMode Then
-        MsgBox "処理中にエラーが発生しました。" & Err.Number & vbCrLf & vbCrLf & Err.Description, vbError
-    End If
+    Module2.ShowMsg testMode, "E11", "処理中にエラーが発生しました。" & Err.Number & vbCrLf & vbCrLf & Err.Description, vbError
     Application.ScreenUpdating = True
     Application.Cursor = xlDefault
 End Sub

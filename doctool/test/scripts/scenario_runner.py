@@ -12,6 +12,8 @@ import shutil
 import time
 from pathlib import Path
 
+DIALOG_LOG_FILENAME = "dialog_log.txt"
+
 import openpyxl
 import xlwings as xw
 
@@ -224,6 +226,8 @@ def evaluate_scenario(work_dir: Path, scenario_src_dir: Path, config: dict) -> l
             str(expected_path),
             excluded_cells=excluded_cells,
             compare_fill=True,
+            compare_col_widths=True,
+            compare_print_area=True,
             max_diffs=20,
         )
         if result.matches:
@@ -241,6 +245,29 @@ def evaluate_scenario(work_dir: Path, scenario_src_dir: Path, config: dict) -> l
         template_errors = evaluate_template_assertions(work_dir, template_assertions)
         errors.extend(template_errors)
         assertion_count += len(template_assertions)
+
+    # expected_messages の評価
+    # dialog_log.txt の [MSG:XX] エントリと config の expected_messages を照合する
+    expected_messages = config.get("expected_messages", [])
+    if expected_messages:
+        log_path = work_dir / DIALOG_LOG_FILENAME
+        if not log_path.exists():
+            errors.append(
+                "expected_messages: ダイアログログ（dialog_log.txt）が存在しません。"
+                " testMode で extract ステップが実行されていない可能性があります。"
+            )
+        else:
+            log_content = log_path.read_text(encoding="utf-8")
+            found_ids = re.findall(r'\[MSG:([A-Z]\d+)\]', log_content)
+            for expected_id in expected_messages:
+                if expected_id in found_ids:
+                    print(f"  ✓ expected_messages: '{expected_id}' を確認")
+                else:
+                    errors.append(
+                        f"expected_messages: '{expected_id}' がダイアログログに見つかりません"
+                        f" (実際のログ: {found_ids})"
+                    )
+        assertion_count += len(expected_messages)
 
     # アサーションが1件もない場合はテスト設定ミスとして失敗
     if assertion_count == 0:
@@ -318,8 +345,19 @@ def _execute_vba(
                 )
                 for run_num in range(repeat):
                     xlsm_wb.names["REVIEW_TIMES"].refers_to_range.value = review_times
+                    if test_mode:
+                        xlsm_wb.macro("Module2.ClearDialogLog")()
                     print(f"[{scenario_name}]   マクロ実行中 (run {run_num + 1}/{repeat})...")
                     macro(test_mode)
+                    if test_mode:
+                        dialog_log = xlsm_wb.macro("Module2.GetDialogLog")()
+                        if dialog_log:
+                            log_path = work_dir / DIALOG_LOG_FILENAME
+                            with open(log_path, "a", encoding="utf-8") as f:
+                                f.write(dialog_log + "\n")
+                            for line in dialog_log.split("\n"):
+                                if line:
+                                    print(f"[{scenario_name}]   [LOG] {line}")
 
             elif action == "delete_comments":
                 print(f"[{scenario_name}] Step {step_idx}: delete_comments")
