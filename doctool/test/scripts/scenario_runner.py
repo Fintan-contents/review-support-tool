@@ -400,14 +400,14 @@ def _execute_vba(
                 print(f"[{scenario_name}] Step {step_idx}: delete_comments")
                 _run_delete_macro(
                     scenario_name, xlsm_wb,
-                    "Module2.DelAllReviewComments_Click_Core", test_mode,
+                    "Module2.DelAllReviewComments_Click_Core", test_mode, work_dir,
                 )
 
             elif action == "delete_sheets":
                 print(f"[{scenario_name}] Step {step_idx}: delete_sheets")
                 _run_delete_macro(
                     scenario_name, xlsm_wb,
-                    "Module2.DelAllReviewResultSheets_Click_Core", test_mode,
+                    "Module2.DelAllReviewResultSheets_Click_Core", test_mode, work_dir,
                 )
 
         print(f"[{scenario_name}] 全ステップ完了")
@@ -457,6 +457,7 @@ def _run_delete_macro(
     xlsm_wb,
     macro_path: str,
     test_mode: bool,
+    work_dir: Path | None = None,
 ) -> None:
     """削除系マクロを実行する。"""
     try:
@@ -464,6 +465,10 @@ def _run_delete_macro(
         xlsm_wb.macro(macro_path)(test_mode)
         dialog_log = xlsm_wb.macro("Module2.GetDialogLog")()
         if dialog_log:
+            if work_dir is not None:
+                log_path = work_dir / DIALOG_LOG_FILENAME
+                with open(log_path, "a", encoding="utf-8") as f:
+                    f.write(dialog_log + "\n")
             for line in dialog_log.split("\n"):
                 print(f"[{scenario_name}]     {line}")
     except Exception as e:

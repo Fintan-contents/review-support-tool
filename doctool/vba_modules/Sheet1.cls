@@ -900,7 +900,7 @@ Public Sub CmdGen_Click_Core(Optional testMode As Boolean = False)
                 End If
                 '出力シート名の決定
                 outputSheetName = OUTPUT_SHEETNAME_PREFIX & CStr(count) & OUTPUT_SHEETNAME_SUFFIX
-                ' [E13] 2回目以降: 既存の「レビュー結果1回目」シートのrow9カテゴリエイリアスと現設定を照合
+                ' [E13] 2回目以降: 既存の「レビュー結果1回目」シートのカテゴリ設定と現設定を照合
                 ' （review_times=1 の場合は1回目の上書きなのでチェック不要）
                 If CLng(count) >= 2 Then
                     Dim firstResultName As String
@@ -908,19 +908,29 @@ Public Sub CmdGen_Click_Core(Optional testMode As Boolean = False)
                     If hasSheet(book, firstResultName) Then
                         Dim firstResultSheet As Worksheet
                         Set firstResultSheet = book.Worksheets(firstResultName)
-                        ' row9（ROW_CATEGORY-1）のエイリアスリストを構築
+                        ' ROW_CATEGORY行のSUM式を持つ計列を検索してカテゴリ数を取得
+                        ' （row9はCOUNTIF式があるため使用せず、SUM式の位置からカテゴリ数を算出）
+                        Dim existSumifCol As Long
+                        existSumifCol = COL_CATEGORY_START
+                        Do
+                            If firstResultSheet.Cells(ROW_CATEGORY, existSumifCol).HasFormula Then
+                                If Left(firstResultSheet.Cells(ROW_CATEGORY, existSumifCol).Formula, 5) = "=SUM(" Then Exit Do
+                            End If
+                            existSumifCol = existSumifCol + 1
+                            If existSumifCol > COL_CATEGORY_START + 50 Then Exit Do  ' 安全上限
+                        Loop
+                        Dim existSheetCatCount As Long
+                        existSheetCatCount = existSumifCol - COL_CATEGORY_START
+                        ' 行7（Phase3が書き込んだエイリアス行）からエイリアスリストを構築
                         Dim existSheetAliases As String
                         existSheetAliases = ""
                         Dim existSheetCol As Long
-                        existSheetCol = COL_CATEGORY_START
                         Dim existSheetAlias As String
-                        Do
-                            existSheetAlias = CStr(firstResultSheet.Cells(ROW_CATEGORY - 1, existSheetCol).Value)
-                            If Len(existSheetAlias) = 0 Then Exit Do
+                        For existSheetCol = COL_CATEGORY_START To COL_CATEGORY_START + existSheetCatCount - 1
+                            existSheetAlias = CStr(firstResultSheet.Cells(7, existSheetCol).Value)
                             If Len(existSheetAliases) > 0 Then existSheetAliases = existSheetAliases & ","
                             existSheetAliases = existSheetAliases & existSheetAlias
-                            existSheetCol = existSheetCol + 1
-                        Loop
+                        Next existSheetCol
                         ' 現設定エイリアスリストを構築
                         Dim currSheetAliases As String
                         currSheetAliases = ""
@@ -930,8 +940,6 @@ Public Sub CmdGen_Click_Core(Optional testMode As Boolean = False)
                             currSheetAliases = currSheetAliases & CStr(currSheetKey)
                         Next currSheetKey
                         If existSheetAliases <> currSheetAliases Then
-                            Dim existSheetCatCount As Long
-                            existSheetCatCount = existSheetCol - COL_CATEGORY_START
                             Module2.ShowMsg testMode, "E13", _
                                 "カテゴリ設定が変更されました（" & existSheetCatCount & "種類 → " & categoryMappings.Count & "種類）。" & _
                                 "既存のレビュー結果シートのカテゴリ構造と不整合になるため、処理を中断します。" & _
@@ -980,15 +988,6 @@ Public Sub CmdGen_Click_Core(Optional testMode As Boolean = False)
                 output.Cells(ROW_DOC_ID, COL_DOC_ID) = docId
                 output.Cells(ROW_TARGET, COL_TARGET) = target
                 output.Cells(ROW_COUNT, COL_COUNT) = count
-                ' [E13] レビュー結果シートのrow9（ROW_CATEGORY-1）にカテゴリエイリアスを書き込む
-                ' （E13チェック時の照合キーとして使用する）
-                Dim outCatAliasKey As Variant
-                Dim outCatAliasIdx As Long
-                outCatAliasIdx = 0
-                For Each outCatAliasKey In categoryMappings.Keys
-                    output.Cells(ROW_CATEGORY - 1, COL_CATEGORY_START + outCatAliasIdx).Value = CStr(outCatAliasKey)
-                    outCatAliasIdx = outCatAliasIdx + 1
-                Next outCatAliasKey
                 'エラーシートが既にある場合は削除
                 If hasSheet(book, OUTPUT_ERR_SHEETNAME) = True Then
                     Application.DisplayAlerts = False

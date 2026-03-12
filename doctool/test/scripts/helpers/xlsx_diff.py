@@ -65,7 +65,10 @@ def _build_excluded_set(excluded_cells: list[dict]) -> dict[str, set[str]]:
 
 
 def _normalize_fill(cell) -> str:
-    """セルの塗りつぶし色を正規化文字列で返す。塗りつぶしなし/透明の場合は空文字。"""
+    """セルの塗りつぶし色を正規化文字列で返す。塗りつぶしなし/透明の場合は空文字。
+
+    テーマカラー等、openpyxl が正常に読み取れない色は空文字として扱い比較をスキップする。
+    """
     fill = cell.fill
     if fill is None:
         return ""
@@ -73,8 +76,15 @@ def _normalize_fill(cell) -> str:
     if not pt or pt == "none":
         return ""
     if pt == "solid":
-        rgb = getattr(fill.fgColor, "rgb", None) or "00000000"
-        if not rgb or rgb == "00000000":
+        try:
+            rgb = getattr(fill.fgColor, "rgb", None)
+        except Exception:
+            return ""  # テーマカラー等、読み取り不可の場合はスキップ
+        if not rgb or not isinstance(rgb, str):
+            return ""
+        # 8桁 RRGGBBAA 形式以外（テーマカラーのエラー文字列等）はスキップ
+        import re as _re
+        if not _re.fullmatch(r"[0-9A-Fa-f]{8}", rgb) or rgb == "00000000":
             return ""
         return f"solid:{rgb}"
     return pt
