@@ -908,30 +908,28 @@ Public Sub CmdGen_Click_Core(Optional testMode As Boolean = False)
                     If hasSheet(book, firstResultName) Then
                         Dim firstResultSheet As Worksheet
                         Set firstResultSheet = book.Worksheets(firstResultName)
-                        ' 行7（Phase3がエイリアス専用に使用する行）を左から走査してエイリアスリストを構築
+                        ' 行7（Phase3がエイリアス専用に使用する行）を左から走査してカテゴリ数を取得
                         ' エイリアスは1文字以上の文字列のため、空セルが終端を示す
-                        Dim existSheetAliases As String
-                        existSheetAliases = ""
-                        Dim existSheetCol As Long
-                        existSheetCol = COL_CATEGORY_START
-                        Do While Len(CStr(firstResultSheet.Cells(7, existSheetCol).Value)) > 0
-                            Dim existSheetAlias As String
-                            existSheetAlias = CStr(firstResultSheet.Cells(7, existSheetCol).Value)
-                            If Len(existSheetAliases) > 0 Then existSheetAliases = existSheetAliases & ","
-                            existSheetAliases = existSheetAliases & existSheetAlias
-                            existSheetCol = existSheetCol + 1
-                        Loop
                         Dim existSheetCatCount As Long
-                        existSheetCatCount = existSheetCol - COL_CATEGORY_START
-                        ' 現設定エイリアスリストを構築
-                        Dim currSheetAliases As String
-                        currSheetAliases = ""
-                        Dim currSheetKey As Variant
-                        For Each currSheetKey In categoryMappings.Keys
-                            If Len(currSheetAliases) > 0 Then currSheetAliases = currSheetAliases & ","
-                            currSheetAliases = currSheetAliases & CStr(currSheetKey)
-                        Next currSheetKey
-                        If existSheetAliases <> currSheetAliases Then
+                        existSheetCatCount = 0
+                        Do While Len(CStr(firstResultSheet.Cells(7, COL_CATEGORY_START + existSheetCatCount).Value)) > 0
+                            existSheetCatCount = existSheetCatCount + 1
+                        Loop
+                        ' categoryMappingsと直接比較（件数→エイリアス順序）
+                        Dim catChanged As Boolean
+                        catChanged = (existSheetCatCount <> categoryMappings.Count)
+                        If Not catChanged Then
+                            Dim currKeys() As Variant
+                            currKeys = categoryMappings.Keys
+                            Dim aliasIdx As Long
+                            For aliasIdx = 0 To existSheetCatCount - 1
+                                If CStr(firstResultSheet.Cells(7, COL_CATEGORY_START + aliasIdx).Value) <> CStr(currKeys(aliasIdx)) Then
+                                    catChanged = True
+                                    Exit For
+                                End If
+                            Next aliasIdx
+                        End If
+                        If catChanged Then
                             Module2.ShowMsg testMode, "E13", _
                                 "カテゴリ設定が変更されました（" & existSheetCatCount & "種類 → " & categoryMappings.Count & "種類）。" & _
                                 "既存のレビュー結果シートのカテゴリ構造と不整合になるため、処理を中断します。" & _
