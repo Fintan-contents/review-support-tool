@@ -223,6 +223,7 @@ def evaluate_scenario(work_dir: Path, scenario_src_dir: Path, config: dict) -> l
             str(actual_path),
             str(expected_path),
             excluded_cells=excluded_cells,
+            compare_fill=True,
             max_diffs=20,
         )
         if result.matches:

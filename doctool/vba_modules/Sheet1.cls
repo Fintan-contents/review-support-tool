@@ -640,6 +640,17 @@ Public Sub CmdGen_Click_Core(Optional testMode As Boolean = False)
                                  SheetTemplate.Cells(DETAIL_START_ROW + 1, rightmostLT)).Delete Shift:=xlShiftToLeft
         Next ltInsertIdx
     End If
+    ' Phase1 Insert（行1-16, actualSumifStart〜+catColDiff-1列）の行14 背景色をクリアする
+    ' Phase1 で挿入された空列は隣接する K14（黄色背景）の書式を継承するため、
+    ' gap fix より先にクリアしておく。gap fix で列が削除されるケース（6→9等）では
+    ' 先にクリアしても削除されるため無害。gap fix が実行されないケース（9→12等）では
+    ' このクリアがなければ黄色背景が残ったまま出力に現れる。
+    If catColDiff > 0 Then
+        Dim clrRow14Col As Long
+        For clrRow14Col = actualSumifStart To actualSumifStart + catColDiff - 1
+            SheetTemplate.Cells(14, clrRow14Col).Interior.ColorIndex = xlNone
+        Next clrRow14Col
+    End If
     ' [Bug Fix] 集計用ワーク（SUMIFフラグ列）が対応状況列の直右から始まるよう整列する
     ' 「期待するSUMIF開始列」= max(計列+1, COL_CATEGORY_HEADER_START) と tplSumifStartCol の差が
     ' ギャップ列数。これにより catColDiff の正負を問わず正しいギャップを算出できる。

@@ -64,12 +64,29 @@ def _build_excluded_set(excluded_cells: list[dict]) -> dict[str, set[str]]:
     return result
 
 
+def _normalize_fill(cell) -> str:
+    """セルの塗りつぶし色を正規化文字列で返す。塗りつぶしなし/透明の場合は空文字。"""
+    fill = cell.fill
+    if fill is None:
+        return ""
+    pt = getattr(fill, "patternType", None)
+    if not pt or pt == "none":
+        return ""
+    if pt == "solid":
+        rgb = getattr(fill.fgColor, "rgb", None) or "00000000"
+        if not rgb or rgb == "00000000":
+            return ""
+        return f"solid:{rgb}"
+    return pt
+
+
 def compare_workbooks(
     actual_path: str,
     expected_path: str,
     sheets: Optional[list[str]] = None,
     excluded_cells: Optional[list[dict]] = None,
     ignore_format: bool = True,
+    compare_fill: bool = False,
     max_diffs: int = 10
 ) -> DiffResult:
     """2つのxlsxファイルをセル値ベースで比較する
@@ -82,6 +99,7 @@ def compare_workbooks(
             例: [{"sheet": "レビュー結果1回目", "cells": ["E4"]}]
             毎回変わる実施日時などのセルに使用する
         ignore_format: フォーマット（色・罫線等）を無視（現在は常にTrue）
+        compare_fill: Trueの場合、セルの背景色（塗りつぶし）も比較する
         max_diffs: 報告する差分の最大数（デバッグ容易性のため制限）
 
     Returns:
@@ -155,6 +173,19 @@ def compare_workbooks(
                     if len(diffs) >= max_diffs:
                         diffs.append(f"... (差分数が{max_diffs}件を超えたため省略)")
                         return DiffResult(matches=False, diffs=diffs)
+
+                # 背景色（塗りつぶし）の比較
+                if compare_fill:
+                    af = _normalize_fill(aws.cell(row, col))
+                    ef = _normalize_fill(ews.cell(row, col))
+                    if af != ef:
+                        diffs.append(
+                            f"[{sheet_name}!{cell_ref}] fill:"
+                            f" actual='{af}' != expected='{ef}'"
+                        )
+                        if len(diffs) >= max_diffs:
+                            diffs.append(f"... (差分数が{max_diffs}件を超えたため省略)")
+                            return DiffResult(matches=False, diffs=diffs)
 
                 # コメント（メモ）の比較
                 ac = aws.cell(row, col).comment
