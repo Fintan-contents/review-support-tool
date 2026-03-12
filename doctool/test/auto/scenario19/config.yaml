@@ -1,0 +1,44 @@
+viewpoint: "観点51,53: 連続カテゴリ減（9→7→5）でテンプレート列調整と抽出が正しく動作する"
+instructions:
+  - "Step1: 7カテゴリで抽出（テンプレート 9→7 列に削減）"
+  - "Step2: 5カテゴリで再抽出（テンプレート 7→5 列に削減、review_times=1 で上書き）"
+  - "減を繰り返すケースで列調整・列幅・印刷範囲が正しく調整されることを Gold Master 比較で検証"
+
+steps:
+  # Step 1: 7カテゴリで抽出（テンプレートを 9→7 列に削減）
+  - action: extract
+    review_times: 1
+    categories:
+      - alias: "a"
+        name: "01_要件漏れ"
+      - alias: "b"
+        name: "02_要件誤り"
+      - alias: "c"
+        name: "11_機能・仕様漏れ"
+      - alias: "d"
+        name: "12_機能・仕様誤り"
+      - alias: "e"
+        name: "21_設計・ドキュメント規約違反"
+      - alias: "f"
+        name: "22_記述誤り"
+      - alias: "g"
+        name: "91_疑問点、確認"
+
+  # Step 2: 5カテゴリで再抽出（テンプレートを 7→5 列に削減）
+  - action: extract
+    review_times: 1
+    categories:
+      - alias: "a"
+        name: "01_要件漏れ"
+      - alias: "b"
+        name: "02_要件誤り"
+      - alias: "c"
+        name: "11_機能・仕様漏れ"
+      - alias: "d"
+        name: "12_機能・仕様誤り"
+      - alias: "e"
+        name: "21_設計・ドキュメント規約違反"
+
+expected_messages:
+  - "C02"
+  - "I01"
