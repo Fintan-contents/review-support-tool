@@ -287,13 +287,18 @@ def evaluate_scenario(work_dir: Path, scenario_src_dir: Path, config: dict) -> l
             else:
                 print(f"  ✓ expected_messages: 想定外メッセージなし")
 
-        assertion_count += len(expected_messages) + 1  # +1 は逆方向チェック分
+        # expected_messages は assertion_count に含めない。
+        # シート有無確認か Gold Master 比較のいずれかが必ず存在することを別途保証する。
 
-    # アサーションが1件もない場合はテスト設定ミスとして失敗
+    # 構造的アサーション（シート有無確認 / Gold Master 比較 / template_assertions）が
+    # 1件もない場合はテスト設定ミスとして失敗。
+    # expected_messages のみでは不十分 ― VBA が正しい出力を生成したことを確認できない。
     if assertion_count == 0:
         errors.append(
-            "アサーションが1件もありません。"
-            "_expected.xlsx を配置するか file_expectations/template_assertions を設定してください。"
+            "構造的アサーションが1件もありません。"
+            "_expected.xlsx を配置するか、file_expectations で assert_no_sheets を設定するか、"
+            "template_assertions を設定してください。"
+            "（expected_messages はダイアログ検証専用のため、この条件を満たしません）"
         )
 
     return errors
