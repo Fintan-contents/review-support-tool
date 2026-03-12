@@ -228,6 +228,7 @@ def evaluate_scenario(work_dir: Path, scenario_src_dir: Path, config: dict) -> l
             compare_fill=True,
             compare_col_widths=True,
             compare_print_area=True,
+            compare_borders=True,
             max_diffs=20,
         )
         if result.matches:

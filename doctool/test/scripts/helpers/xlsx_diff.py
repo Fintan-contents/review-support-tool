@@ -80,6 +80,32 @@ def _normalize_fill(cell) -> str:
     return pt
 
 
+def _normalize_border_side(side) -> str:
+    """罫線の一辺（left/right/top/bottom）を正規化文字列で返す。罫線なしは空文字。
+
+    色は比較対象外とし、スタイル（thin/medium/thick など）のみを返す。
+    テーマカラーやインデックスカラーは rgb 取得時に例外が発生するケースがあるため除外。
+    """
+    if side is None:
+        return ""
+    return getattr(side, "border_style", None) or ""
+
+
+def _normalize_border(cell) -> str:
+    """セルの4辺罫線を正規化文字列で返す。罫線が1辺もない場合は空文字。"""
+    b = cell.border
+    if b is None:
+        return ""
+    sides = {
+        "l": _normalize_border_side(getattr(b, "left", None)),
+        "r": _normalize_border_side(getattr(b, "right", None)),
+        "t": _normalize_border_side(getattr(b, "top", None)),
+        "b": _normalize_border_side(getattr(b, "bottom", None)),
+    }
+    parts = [f"{k}:{v}" for k, v in sides.items() if v]
+    return ",".join(parts)
+
+
 def _get_col_widths(ws) -> dict[str, float]:
     """明示的に設定された列幅を {列文字: 幅} で返す。幅未設定列は含まない。"""
     widths = {}
@@ -98,6 +124,7 @@ def compare_workbooks(
     compare_fill: bool = False,
     compare_col_widths: bool = False,
     compare_print_area: bool = False,
+    compare_borders: bool = False,
     max_diffs: int = 10
 ) -> DiffResult:
     """2つのxlsxファイルをセル値ベースで比較する
@@ -113,6 +140,7 @@ def compare_workbooks(
         compare_fill: Trueの場合、セルの背景色（塗りつぶし）も比較する
         compare_col_widths: Trueの場合、明示設定された列幅を比較する
         compare_print_area: Trueの場合、印刷範囲を比較する
+        compare_borders: Trueの場合、セルの4辺罫線（スタイル・色）を比較する
         max_diffs: 報告する差分の最大数（デバッグ容易性のため制限）
 
     Returns:
@@ -215,6 +243,19 @@ def compare_workbooks(
                     if len(diffs) >= max_diffs:
                         diffs.append(f"... (差分数が{max_diffs}件を超えたため省略)")
                         return DiffResult(matches=False, diffs=diffs)
+
+                # 罫線の比較
+                if compare_borders:
+                    ab = _normalize_border(aws.cell(row, col))
+                    eb = _normalize_border(ews.cell(row, col))
+                    if ab != eb:
+                        diffs.append(
+                            f"[{sheet_name}!{cell_ref}] border:"
+                            f" actual='{ab}' != expected='{eb}'"
+                        )
+                        if len(diffs) >= max_diffs:
+                            diffs.append(f"... (差分数が{max_diffs}件を超えたため省略)")
+                            return DiffResult(matches=False, diffs=diffs)
 
         if len(diffs) >= max_diffs:
             diffs.append(f"... (差分数が{max_diffs}件を超えたため省略)")
