@@ -153,8 +153,8 @@ Const DETAIL_COL_LIST_REVIEWER = 17      ' レビュアの列
 Const DETAIL_COL_LIST_REVIEWEE = 23      ' レビュイの列
 Const DETAIL_COL_LIST_REVIEW_WAY = 25    ' レビュー方式の列
 Const DETAIL_COL_LIST_CATEGORY_TOTAL = 28  ' 指摘合計の列
-Const DETAIL_COL_LIST_CATEGORY_START = 29  ' 指摘分類の開始列（v2.0: 動的。設定シートのカテゴリ数に応じてN列分使用）
-' v2.0 では以下は廃止し DETAIL_COL_LIST_CATEGORY_START + N で計算する:
+Const DETAIL_COL_LIST_CATEGORY_START = 29  ' 指摘分類の開始列（2026-03-31: 動的。設定シートのカテゴリ数に応じてN列分使用）
+' 2026-03-31 以降は廃止し DETAIL_COL_LIST_CATEGORY_START + N で計算する:
 '   DETAIL_COL_LIST_REVIEW_RESULT  = DETAIL_COL_LIST_CATEGORY_START + categoryCount
 '   DETAIL_COL_LIST_RE_REVIEW_WAY  = DETAIL_COL_LIST_CATEGORY_START + categoryCount + 1
 ```
