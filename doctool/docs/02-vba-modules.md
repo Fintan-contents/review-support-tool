@@ -6,9 +6,9 @@
 
 | モジュール名 | 種類 | 行数 | 説明 |
 |------------|------|------|------|
-| `Sheet1.cls` | クラスモジュール | 918行 | **メイン処理**（レビュー指摘事項抽出シート） |
-| `Module1.bas` | 標準モジュール | 109行 | **ユーティリティ関数群** |
-| `Module2.bas` | 標準モジュール | 101行 | **クリーンアップ処理**（コメント・シート削除） |
+| `Sheet1.cls` | クラスモジュール | 1473行 | **メイン処理**（レビュー指摘事項抽出シート） |
+| `Module1.bas` | 標準モジュール | 231行 | **ユーティリティ関数群** |
+| `Module2.bas` | 標準モジュール | 159行 | **クリーンアップ処理**（コメント・シート削除） |
 | `Sheet8.cls` | クラスモジュール | 31行 | 不明（抽出結果で中身なし） |
 | `ThisWorkbook.cls` | クラスモジュール | 2行 | 空 |
 | `SheetTemplate.cls` | クラスモジュール | 2行 | 空（レビュー結果シートテンプレート） |
@@ -42,8 +42,6 @@
 | `extractCloseLine(commentText)` | String | コメントから「済」を含む行を抽出 |
 | `ExtractCategory(commentText)` | String | コメントからカテゴリ（1-2文字）を抽出 |
 | `IsValidCategory(category, categoryMappings)` | Boolean | カテゴリが設定シートに登録済みかチェック |
-| `LoadCategoriesFromSettings()` | Variant | 設定シートから表示順ソート済みのカテゴリ配列を取得 |
-| `SortDictionaryKeys(dict)` | Variant | Dictionary のキー（数値）を昇順ソートして配列で返す |
 
 ### Module2.bas（クリーンアップ）
 
