@@ -292,14 +292,19 @@ def evaluate_scenario(work_dir: Path, scenario_src_dir: Path, config: dict) -> l
 
     # 構造的アサーション（シート有無確認 / Gold Master 比較 / template_assertions）が
     # 1件もない場合はテスト設定ミスとして失敗。
-    # expected_messages のみでは不十分 ― VBA が正しい出力を生成したことを確認できない。
+    # ただし file_expectations: [] が明示指定されている場合は「出力なし」が意図的であるため除外。
+    # （例: 削除対象なし通知のシナリオ ― E09/E10 発火のみを expected_messages で検証）
     if assertion_count == 0:
-        errors.append(
-            "構造的アサーションが1件もありません。"
-            "_expected.xlsx を配置するか、file_expectations で assert_no_sheets を設定するか、"
-            "template_assertions を設定してください。"
-            "（expected_messages はダイアログ検証専用のため、この条件を満たしません）"
-        )
+        if "file_expectations" in config and config["file_expectations"] == []:
+            pass  # 出力ファイルなしが意図的なシナリオ（E09/E10 等）
+        else:
+            errors.append(
+                "構造的アサーションが1件もありません。"
+                "_expected.xlsx を配置するか、file_expectations で assert_no_sheets を設定するか、"
+                "template_assertions を設定してください。"
+                "（expected_messages はダイアログ検証専用のため、この条件を満たしません）"
+                "出力ファイルが存在しない意図的なシナリオの場合は file_expectations: [] を設定してください。"
+            )
 
     return errors
 

@@ -1,0 +1,21 @@
+viewpoint: "観点69: カテゴリが1件も登録されていない場合（E12）でエラーになり処理中断する"
+instructions:
+  - "setup.categories: [] でカテゴリを0件に設定"
+  - "VBA はカテゴリマッピングが空であることを検出し E12 で中断する"
+  - "検証: E12 メッセージがログに記録され、設計書に結果シートが生成されないこと"
+
+setup:
+  use_review_record: false
+  use_summary: false
+  categories: []
+
+steps:
+  - action: extract
+    review_times: 1
+
+expected_messages:
+  - "E12"
+
+file_expectations:
+  - pattern: "システム機能設計書_サンプル_S34\\.xlsx"
+    assert_no_sheets: ["レビュー結果1回目"]

@@ -1,22 +1,18 @@
-viewpoint: "E13: review_times=2 でカテゴリ変更時にエラーで中断する"
+viewpoint: "観点66: カテゴリ減設定（9→6）でレビュー記録サマリ使用時、レビュー記録一覧のカテゴリヘッダーが設定数に削減される"
 instructions:
-  - "Step1: 9カテゴリ（デフォルト）で review_times=1 を実行（レビュー結果1回目 row9 に a〜i を書き込み）"
-  - "Step2: 6カテゴリに変更して review_times=2 を実行 → E13 で中断"
-  - "検証: E13 メッセージがダイアログログに記録されていること"
-  - "検証: レビュー結果2回目 シートが作成されていないこと"
+  - "6カテゴリ設定 + レビュー記録サマリ使用 で抽出実行"
+  - "検証: レビュー記録一覧のカテゴリヘッダーが6列に削減されること"
+  - "template_assertions でテンプレートシートのカテゴリ列数（6）を自動検証（Gold Master pending）"
+  - "Gold Master（_expected.xlsx）は修正後 Windows 実行後に作成"
 
+# categories は step レベルで指定する（setup レベルでは VBA が正しく読まないケースがある）
 setup:
-  use_review_record: false
-  use_summary: false
+  use_summary: true
+  review_list_file: "レビュー記録サマリ_S30.xlsx"
 
 steps:
-  # Step 1: 9カテゴリ（デフォルト）で1回目抽出 → レビュー結果1回目にrow9エイリアスを書き込む
   - action: extract
     review_times: 1
-
-  # Step 2: 6カテゴリに変更して2回目抽出 → row9 の不一致を検出し E13 で中断
-  - action: extract
-    review_times: 2
     categories:
       - alias: "a"
         name: "01_要件漏れ"
@@ -32,10 +28,9 @@ steps:
         name: "22_記述誤り"
 
 expected_messages:
-  - "C02"  # 各ステップで設計書の抽出確認ダイアログ
-  - "I01"  # Step1 完了通知（Step2 は E13 で中断するため I01 なし）
-  - "E13"  # Step2: カテゴリ変更検出エラー
+  - "C02"
+  - "I01"
 
-file_expectations:
-  - pattern: "システム機能設計書_サンプル_S30\\.xlsx"
-    assert_no_sheets: ["レビュー結果2回目"]
+template_assertions:
+  - sheet: "レビュー結果シートテンプレート"
+    category_count: 6

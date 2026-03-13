@@ -1,17 +1,18 @@
-viewpoint: "観点71: レビュアを設計書から取得できない場合（W03）に警告して「取得できませんでした」をセットし処理続行する"
+viewpoint: "観点70: 工程を設計書から取得できない場合（W02）に警告して「取得できませんでした」をセットし処理続行する"
 instructions:
-  - "REVIEW_LIST_REVIEWER_SHEET に存在しないシート名を設定し、checkReference を失敗させる"
-  - "W03 は結果シート作成後に発火 → 処理は続行し I01 が出力される"
-  - "検証: W03 がログに記録され、結果シートが正しく生成されること"
-  - "検証: 結果シートのレビュア欄に '取得できませんでした' が記載されること（Gold Master 比較で確認）"
+  - "REVIEW_LIST_PHASE_SHEET に存在しないシート名を設定し、checkReference を失敗させる"
+  - "W02 は結果シート作成後に発火 → 処理は続行し I01 が出力される"
+  - "検証: W02 がログに記録され、結果シートが正しく生成されること"
+  - "検証: 結果シートの工程欄に '取得できませんでした' が記載されること（Gold Master 比較で確認）"
 
-# REVIEW_LIST_REVIEWER: 固定値を空にする
-# REVIEW_LIST_REVIEWER_SHEET: 存在しないシート名 → checkReference 失敗 → W03
+# REVIEW_LIST_PHASE: 固定値を空にする（参照による取得を試みる）
+# REVIEW_LIST_PHASE_SHEET: 存在しないシート名 → checkReference 失敗 → W02
+# REVIEW_LIST_PHASE_CELL: 任意セル（checkReference はシート存在チェック後にセル参照）
 setup:
   named_ranges:
-    REVIEW_LIST_REVIEWER: ""
-    REVIEW_LIST_REVIEWER_SHEET: "存在しないシート"
-    REVIEW_LIST_REVIEWER_CELL: "B1"
+    REVIEW_LIST_PHASE: ""
+    REVIEW_LIST_PHASE_SHEET: "存在しないシート"
+    REVIEW_LIST_PHASE_CELL: "B1"
 
 steps:
   - action: extract
@@ -19,5 +20,5 @@ steps:
 
 expected_messages:
   - "C02"
-  - "W03"
+  - "W02"
   - "I01"

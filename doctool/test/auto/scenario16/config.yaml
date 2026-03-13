@@ -1,25 +1,23 @@
-viewpoint: "観点65: レビュー記録一覧ファイルに指定シートが存在しない場合（E05）でエラーになり処理中断する"
+viewpoint: "観点64: レビュー記録一覧ファイルが存在しない場合（E04）でエラーになり処理中断する"
 instructions:
-  - "レビュー記録サマリ_S16.xlsx はシート名不一致の最小構成ファイル（Sheet1 のみ）"
-  - "REVIEW_LIST_SHEET に存在しないシート名 'レビュー記録一覧' を明示的に指定"
-  - "VBA がファイルを開いた後、指定シートが存在しないことを検出して E05 で中断する"
-  - "検証: E05 がログに記録され、設計書に結果シートが生成されないこと"
+  - "存在しないファイル名を review_list_file に指定する"
+  - "scenario_runner.py が work_dir 内の絶対パスを REVIEW_LIST_FILEPATH に設定するが、"
+  - "そのファイルは work_dir に存在しないため Dir() チェックが失敗し E04 が発火する"
+  - "検証: E04 がログに記録され、設計書に結果シートが生成されないこと"
 
-# review_list_file: "レビュー記録サマリ_S16.xlsx" が存在する（E04 回避）が、
-# ファイル内に期待シートが存在しない（Sheet1 のみ）→ E05 発火
-# REVIEW_LIST_SHEET に存在しないシート名を明示指定することで、テスト意図を明確化する
+# review_list_file に存在しないファイル名を指定 → FILEPATH がセットされるが
+# そのファイルが work_dir に存在しないため E04 発火
+# （E03 発火を回避するため REVIEW_LIST_SHEET は xlsm デフォルト値を維持する）
 setup:
   use_summary: true
-  review_list_file: "レビュー記録サマリ_S16.xlsx"
-  named_ranges:
-    REVIEW_LIST_SHEET: "レビュー記録一覧"
+  review_list_file: "存在しないファイル.xlsx"
 
 steps:
   - action: extract
     review_times: 1
 
 expected_messages:
-  - "E05"
+  - "E04"
 
 file_expectations:
   - pattern: "システム機能設計書_サンプル_S16\\.xlsx"

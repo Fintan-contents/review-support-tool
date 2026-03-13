@@ -1,19 +1,23 @@
-viewpoint: "観点29: レビュー記録サマリ使用時、日時・回数等がレビュー記録一覧に正しく転記される"
+viewpoint: "観点28: 削除対象ファイルが開いていない場合に削除対象なし通知（E09/E10）が表示される"
 instructions:
-  - "入力: S01 と同内容（レビュー記録サマリ使用=TRUE）"
-  - "REVIEW_TIMES=1 で抽出実行"
-  - "検証: レビュー記録一覧にレビュー回数・日付・開始/終了時刻・レビュー時間等が転記されることを Gold Master 比較で確認"
+  - "xlsx ファイルを一切配置しない（= 削除対象となる設計書が Excel で開かれていない状態）"
+  - "コメント削除を実行 → E09（メモ削除対象のファイルがない）が発火することを検証"
+  - "シート削除を実行 → E10（レビュー結果シート削除対象のファイルがない）が発火することを検証"
+  - "いずれも処理は正常終了し、出力ファイルは生成されない"
 
-# レビュー記録サマリ（B3）を有効化し、
-# REVIEW_LIST_FILEPATH を work_dir 内ファイルの絶対パスで動的設定する
+# xlsx を一切配置しないため fileCount=0 となり E09/E10 が発火する
+# file_expectations: [] は出力ファイルなしを意図的に示す（assertion_count=0 を許容）
 setup:
-  use_summary: true
-  review_list_file: "レビュー記録サマリ_S11.xlsx"
+  use_review_record: false
+  use_summary: false
 
 steps:
-  - action: extract
-    review_times: 1
+  - action: delete_comments
+  - action: delete_sheets
 
 expected_messages:
-  - "C02"
-  - "I01"
+  - "E09"
+  - "E10"
+
+# 出力ファイルは生成されないため構造的アサーションなし（意図的）
+file_expectations: []

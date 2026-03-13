@@ -1,42 +1,22 @@
-viewpoint: "観点50,52: 連続カテゴリ増（9→12→15）でテンプレート列調整と抽出が正しく動作する"
+viewpoint: "E13: review_times=2 でカテゴリ変更時にエラーで中断する"
 instructions:
-  - "Step1: 12カテゴリで抽出（テンプレート 9→12 列に拡張）"
-  - "Step2: 15カテゴリで再抽出（テンプレート 12→15 列に拡張、review_times=1 で上書き）"
-  - "増を繰り返すケースで列調整・列幅・印刷範囲が正しく調整されることを Gold Master 比較で検証"
+  - "Step1: 9カテゴリ（デフォルト）で review_times=1 を実行（レビュー結果1回目 row9 に a〜i を書き込み）"
+  - "Step2: 6カテゴリに変更して review_times=2 を実行 → E13 で中断"
+  - "検証: E13 メッセージがダイアログログに記録されていること"
+  - "検証: レビュー結果2回目 シートが作成されていないこと"
+
+setup:
+  use_review_record: false
+  use_summary: false
 
 steps:
-  # Step 1: 12カテゴリで抽出（テンプレートを 9→12 列に拡張）
+  # Step 1: 9カテゴリ（デフォルト）で1回目抽出 → レビュー結果1回目にrow9エイリアスを書き込む
   - action: extract
     review_times: 1
-    categories:
-      - alias: "a"
-        name: "01_要件漏れ"
-      - alias: "b"
-        name: "02_要件誤り"
-      - alias: "c"
-        name: "11_機能・仕様漏れ"
-      - alias: "d"
-        name: "12_機能・仕様誤り"
-      - alias: "e"
-        name: "21_設計・ドキュメント規約違反"
-      - alias: "f"
-        name: "22_記述誤り"
-      - alias: "g"
-        name: "91_疑問点、確認"
-      - alias: "h"
-        name: "92_改善要望"
-      - alias: "i"
-        name: "93_仕様変更"
-      - alias: "j"
-        name: "94_テスト項目漏れ"
-      - alias: "k"
-        name: "95_テスト漏れ"
-      - alias: "l"
-        name: "96_その他"
 
-  # Step 2: 15カテゴリで再抽出（テンプレートを 12→15 列に拡張）
+  # Step 2: 6カテゴリに変更して2回目抽出 → row9 の不一致を検出し E13 で中断
   - action: extract
-    review_times: 1
+    review_times: 2
     categories:
       - alias: "a"
         name: "01_要件漏れ"
@@ -50,25 +30,12 @@ steps:
         name: "21_設計・ドキュメント規約違反"
       - alias: "f"
         name: "22_記述誤り"
-      - alias: "g"
-        name: "91_疑問点、確認"
-      - alias: "h"
-        name: "92_改善要望"
-      - alias: "i"
-        name: "93_仕様変更"
-      - alias: "j"
-        name: "94_テスト項目漏れ"
-      - alias: "k"
-        name: "95_テスト漏れ"
-      - alias: "l"
-        name: "96_その他"
-      - alias: "m"
-        name: "97_性能問題"
-      - alias: "n"
-        name: "98_セキュリティ"
-      - alias: "o"
-        name: "99_その他2"
 
 expected_messages:
-  - "C02"
-  - "I01"
+  - "C02"  # 各ステップで設計書の抽出確認ダイアログ
+  - "I01"  # Step1 完了通知（Step2 は E13 で中断するため I01 なし）
+  - "E13"  # Step2: カテゴリ変更検出エラー
+
+file_expectations:
+  - pattern: "システム機能設計書_サンプル_S31\\.xlsx"
+    assert_no_sheets: ["レビュー結果2回目"]
