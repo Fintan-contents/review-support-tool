@@ -14,6 +14,11 @@ setup:
   named_ranges:
     REVIEW_LIST_SHEET: "レビュー記録一覧"
 
+# VBA が REVIEW_LIST_FILEPATH 経由でファイルを開くため Python では開かない
+# （COM disconnect 警告のノイズを防ぐため）
+skip_open_files:
+  - "レビュー記録サマリ.*\\.xlsx"
+
 steps:
   - action: extract
     review_times: 1

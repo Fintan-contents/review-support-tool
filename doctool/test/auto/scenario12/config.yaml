@@ -10,6 +10,11 @@ setup:
   use_summary: true
   review_list_file: "レビュー記録サマリ_S12.xlsx"
 
+# VBA が REVIEW_LIST_FILEPATH 経由でファイルを開くため Python では開かない
+# （Python が先に開くと wb.save() で VBA の書き込み結果が上書きされる）
+skip_open_files:
+  - "レビュー記録サマリ.*\\.xlsx"
+
 steps:
   - action: extract
     review_times: 1
