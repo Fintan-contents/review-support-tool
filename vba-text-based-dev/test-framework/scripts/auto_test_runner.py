@@ -4,10 +4,15 @@ test/auto/ 配下のシナリオを pytest で自動実行する。
 scenario_runner のコアロジックを使用し、Gold Master 比較の結果を
 pytest の PASS/FAIL で報告する。
 
-実行方法:
-  python -m pytest scripts/auto_test_runner.py -v --tb=short -s
-  python -m pytest scripts/auto_test_runner.py::TestScenarioGoldMaster::test_scenario_gold_master[scenario01] -v -s
+実行方法（run_auto_tests.bat 経由）:
+  run_auto_tests.bat
+  run_auto_tests.bat scenario01
+  run_auto_tests.bat scenario01 scenario02
+
+環境変数:
+  TOOL_TEST_ROOT: テスト対象ツールの test/ ディレクトリへの絶対パス
 """
+import os
 import time
 import pytest
 from datetime import datetime
@@ -18,7 +23,7 @@ from helpers.tee_logger import tee_to_file
 from scenario_runner import run_scenario, evaluate_scenario, TEMP_DIR
 
 
-AUTO_DIR = Path(__file__).parent.parent / "auto"
+AUTO_DIR = Path(os.environ["TOOL_TEST_ROOT"]) / "auto"
 
 
 def _fmt_elapsed(seconds: float) -> str:

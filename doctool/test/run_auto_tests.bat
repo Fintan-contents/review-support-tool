@@ -8,6 +8,9 @@ REM
 REM Actual output files are saved to: test\temp_dir\scenarioXX\
 
 cd /d %~dp0
+set TOOL_TEST_ROOT=%~dp0
+
+set FRAMEWORK=..\..\vba-text-based-dev\test-framework\scripts
 
 if "%1"=="" goto run_all
 if "%2"=="" goto run_single
@@ -17,14 +20,14 @@ goto run_multi
 echo ====================================
 echo Running all auto scenarios...
 echo ====================================
-python -m pytest scripts\auto_test_runner.py -v --tb=short -s
+python -m pytest %FRAMEWORK%\auto_test_runner.py -v --tb=short -s
 goto end
 
 :run_single
 echo ====================================
 echo Running scenario: %1
 echo ====================================
-python -m pytest scripts\auto_test_runner.py::TestScenarioGoldMaster::test_scenario_gold_master[%1] -v --tb=short
+python -m pytest %FRAMEWORK%\auto_test_runner.py::TestScenarioGoldMaster::test_scenario_gold_master[%1] -v --tb=short
 goto end
 
 :run_multi
@@ -39,7 +42,7 @@ goto build_filter
 echo ====================================
 echo Running scenarios: %FILTER%
 echo ====================================
-python -m pytest scripts\auto_test_runner.py -v --tb=short -s -k "%FILTER%"
+python -m pytest %FRAMEWORK%\auto_test_runner.py -v --tb=short -s -k "%FILTER%"
 
 :end
 echo.

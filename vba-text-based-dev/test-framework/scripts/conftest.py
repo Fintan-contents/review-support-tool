@@ -1,4 +1,5 @@
 """pytest共通設定とフィクスチャ定義"""
+import os
 import sys
 import time
 import pytest
@@ -8,7 +9,7 @@ from pathlib import Path
 from helpers.tee_logger import Tee, start_session_log, session_header
 
 
-TEMP_DIR = Path(__file__).parent.parent / "temp_dir"
+TEMP_DIR = Path(os.environ["TOOL_TEST_ROOT"]) / "temp_dir"
 
 _session_log_file = None
 _session_start_time: float = 0.0

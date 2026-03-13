@@ -8,6 +8,9 @@ REM
 REM Actual output files are saved to: test\temp_dir\scenarioXX\
 
 cd /d %~dp0
+set TOOL_TEST_ROOT=%~dp0
+
+set FRAMEWORK=..\..\vba-text-based-dev\test-framework\scripts
 
 if "%1"=="" (
     echo ====================================
@@ -19,7 +22,7 @@ if "%1"=="" (
     echo ====================================
 )
 
-python scripts\test_runner.py %*
+python %FRAMEWORK%\test_runner.py %*
 
 echo.
 echo ====================================

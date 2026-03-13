@@ -5,12 +5,19 @@ auto / manual 共通の VBA 実行・結果評価ロジックを提供する。
 config.yaml の mode キーで実行モードを自動判定:
   - mode: manual → visible=True, testMode=False（ユーザーがダイアログを操作）
   - それ以外    → visible=False, testMode=True（自動実行）
+
+環境変数:
+  TOOL_TEST_ROOT: テスト対象ツールの test/ ディレクトリへの絶対パス。
+                  tool_config.yaml・auto/・manual/・temp_dir/ の起点となる。
 """
 import gc
+import os
 import re
 import shutil
 import time
 from pathlib import Path
+
+import yaml
 
 DIALOG_LOG_FILENAME = "dialog_log.txt"
 
@@ -21,16 +28,18 @@ from helpers.config_loader import load_scenario_config, validate_step
 from helpers.xlsx_diff import compare_workbooks
 
 
-DOCTOOL_XLSM = (
-    Path(__file__).parent.parent.parent
-    / "Excel設計書レビュー指摘事項抽出ツール"
-    / "Excel設計書レビュー指摘事項抽出ツール.xlsm"
-)
+TOOL_TEST_ROOT = Path(os.environ["TOOL_TEST_ROOT"])
+TEMP_DIR = TOOL_TEST_ROOT / "temp_dir"
 
-TEMP_DIR = Path(__file__).parent.parent / "temp_dir"
+# tool_config.yaml からツール固有設定を読み込む
+def _load_tool_config() -> dict:
+    cfg_path = TOOL_TEST_ROOT / "tool_config.yaml"
+    with open(cfg_path, encoding="utf-8") as f:
+        return yaml.safe_load(f)
 
-
-XLSM_NAME = "Excel設計書レビュー指摘事項抽出ツール.xlsm"
+_tool_cfg = _load_tool_config()
+XLSM_PATH = (TOOL_TEST_ROOT / _tool_cfg["xlsm_path"]).resolve()
+XLSM_NAME = _tool_cfg["xlsm_name"]
 
 
 def run_scenario(scenario_src_dir: Path) -> tuple[Path, dict]:
@@ -63,9 +72,9 @@ def run_scenario(scenario_src_dir: Path) -> tuple[Path, dict]:
     # シナリオのファイルを作業ディレクトリへコピー
     shutil.copytree(str(scenario_src_dir), str(work_dir), dirs_exist_ok=True)
 
-    # doctool xlsm をコピー
+    # xlsm をコピー
     xlsm_dest = work_dir / XLSM_NAME
-    shutil.copy2(DOCTOOL_XLSM, xlsm_dest)
+    shutil.copy2(XLSM_PATH, xlsm_dest)
 
     # skip_open_files に該当しないファイルだけ Excel で開く
     skip_patterns = config.get("skip_open_files", [])

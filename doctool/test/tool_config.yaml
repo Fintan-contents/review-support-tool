@@ -1,0 +1,5 @@
+# doctool 固有のテスト設定
+# vba-text-based-dev/test-framework がこのファイルを読み込み、
+# テスト対象の xlsm を特定する。
+xlsm_path: "../Excel設計書レビュー指摘事項抽出ツール/Excel設計書レビュー指摘事項抽出ツール.xlsm"
+xlsm_name: "Excel設計書レビュー指摘事項抽出ツール.xlsm"

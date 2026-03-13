@@ -3,11 +3,15 @@
 手動操作が必要なシナリオを対話的に実行する。
 scenario_runner のコアロジックを使用し、ユーザー操作待ちのプロンプトを提供する。
 
-実行方法:
-  python scripts/manual_test_runner.py                       # 全シナリオ実行
-  python scripts/manual_test_runner.py scenario05            # 特定シナリオのみ
-  python scripts/manual_test_runner.py scenario05 scenario06 # 複数シナリオ指定
+実行方法（run_manual_tests.bat 経由）:
+  run_manual_tests.bat                       # 全シナリオ実行
+  run_manual_tests.bat scenario05            # 特定シナリオのみ
+  run_manual_tests.bat scenario05 scenario06 # 複数シナリオ指定
+
+環境変数:
+  TOOL_TEST_ROOT: テスト対象ツールの test/ ディレクトリへの絶対パス
 """
+import os
 import sys
 from pathlib import Path
 
@@ -16,7 +20,7 @@ from helpers.tee_logger import tee_to_file, start_session_log, session_header
 from scenario_runner import run_scenario, evaluate_scenario, TEMP_DIR
 
 
-MANUAL_BASE = Path(__file__).parent.parent / "manual"
+MANUAL_BASE = Path(os.environ["TOOL_TEST_ROOT"]) / "manual"
 
 
 def discover_manual_scenarios(filter_names: list[str] = None) -> list[Path]:
