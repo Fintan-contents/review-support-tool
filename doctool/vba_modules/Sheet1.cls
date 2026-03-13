@@ -97,6 +97,7 @@ Public Sub CmdGen_Click_Core(Optional testMode As Boolean = False)
     Dim outputSheetName As String
     Dim docId As String, target As String, count As String, reviewer As String, category As String, reviewComment As String, position As String, replyComment As String, reviewee As String, reviewCommentTemp As String
     Dim preDocId As String
+    Dim isOverwrite As Boolean
     Dim docIdSuffix As String
     Dim isFixed As Boolean
     Dim rc() As String
@@ -152,6 +153,13 @@ Public Sub CmdGen_Click_Core(Optional testMode As Boolean = False)
             Call categoryMappings.Add(.Cells(row, 1).Value, .Cells(row, 2).Value)
         Next row
     End With
+    ' [E12] カテゴリが1件も登録されていない場合はエラーで中断
+    If categoryMappings.Count = 0 Then
+        Module2.ShowMsg testMode, "E12", "カテゴリが1件も登録されていません。指摘分類マッピング設定シートにカテゴリを登録してください。", vbExclamation
+        Application.ScreenUpdating = True
+        Application.Cursor = xlDefault
+        Exit Sub
+    End If
     With ThisWorkbook.Worksheets("項目マッピング設定")
         '項目マッピング設定
         '(ヘッダー)シート名
@@ -948,7 +956,9 @@ Public Sub CmdGen_Click_Core(Optional testMode As Boolean = False)
                 End If
                 '既存のシートを削除
                 preDocId = ""
+                isOverwrite = False
                 If hasSheet(book, outputSheetName) = True Then
+                    isOverwrite = True
                     '文書IDを退避させておく
                     docId = book.Worksheets(outputSheetName).Cells(ROW_DOC_ID, COL_DOC_ID).Value
                     Application.DisplayAlerts = False
@@ -1003,6 +1013,24 @@ Public Sub CmdGen_Click_Core(Optional testMode As Boolean = False)
                 'エラーカウント初期化
                 errcount = 0
                 Application.ScreenUpdating = False
+                ' [上書き時] 指摘一覧の既存エントリを削除してから再書き込みする
+                ' （カテゴリ変更を伴う1回目上書き時に旧カテゴリの行が残留するのを防ぐ）
+                If isOverwrite And useReviewRecord And Not postingOutput Is Nothing And Len(mappingListCount) > 0 Then
+                    Dim clearRow As Long
+                    Dim clearLastRow As Long
+                    clearLastRow = postingOutput.Cells(postingOutput.Rows.Count, 1).End(xlUp).Row
+                    For clearRow = clearLastRow To mappingListStartRow Step -1
+                        If CStr(postingOutput.Range(mappingListCount & CStr(clearRow)).Value) = CStr(count) Then
+                            postingOutput.Rows(clearRow).Delete
+                        End If
+                    Next clearRow
+                    ' 削除後に postingRow / postingTemplateRow を再計算する
+                    postingRow = mappingListStartRow
+                    Do While CStr(postingOutput.Range(mappingListCount & CStr(postingRow)).Value) <> ""
+                        postingRow = postingRow + 1
+                    Loop
+                    postingTemplateRow = postingRow
+                End If
                 If useReviewRecord Then
                     '転記先のレビュー記録票（サマリー）のカレント行にレビュー回数が書かれていない場合は行を追加
                     If Not postingSummaryOutput Is Nothing Then

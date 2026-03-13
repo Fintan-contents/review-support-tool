@@ -1,30 +1,31 @@
-viewpoint: "観点47: カテゴリ減設定（9→6）でレビュー記録サマリ使用時、レビュー記録一覧のカテゴリヘッダーが設定数に削減される"
+viewpoint: "観点66: カテゴリ減設定（9→6）でレビュー記録サマリ使用時、レビュー記録一覧のカテゴリヘッダーが設定数に削減される"
 instructions:
   - "6カテゴリ設定 + レビュー記録サマリ使用 で抽出実行"
   - "検証: レビュー記録一覧のカテゴリヘッダーが6列に削減されること"
-  - "template_assertions でテンプレートシートのカテゴリ列数（6）を自動検証"
-  - "Gold Master（レビュー記録サマリ_S29_expected.xlsx）は Windows 実行後に作成"
+  - "template_assertions でテンプレートシートのカテゴリ列数（6）を自動検証（Gold Master pending）"
+  - "Gold Master（_expected.xlsx）は修正後 Windows 実行後に作成"
 
+# categories は step レベルで指定する（setup レベルでは VBA が正しく読まないケースがある）
 setup:
   use_summary: true
   review_list_file: "レビュー記録サマリ_S29.xlsx"
-  categories:
-    - alias: "a"
-      name: "01_要件漏れ"
-    - alias: "b"
-      name: "02_要件誤り"
-    - alias: "c"
-      name: "11_機能・仕様漏れ"
-    - alias: "d"
-      name: "12_機能・仕様誤り"
-    - alias: "e"
-      name: "21_設計・ドキュメント規約違反"
-    - alias: "f"
-      name: "22_記述誤り"
 
 steps:
   - action: extract
     review_times: 1
+    categories:
+      - alias: "a"
+        name: "01_要件漏れ"
+      - alias: "b"
+        name: "02_要件誤り"
+      - alias: "c"
+        name: "11_機能・仕様漏れ"
+      - alias: "d"
+        name: "12_機能・仕様誤り"
+      - alias: "e"
+        name: "21_設計・ドキュメント規約違反"
+      - alias: "f"
+        name: "22_記述誤り"
 
 expected_messages:
   - "C02"

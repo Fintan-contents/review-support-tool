@@ -1,16 +1,18 @@
 viewpoint: "観点65: レビュー記録一覧ファイルに指定シートが存在しない場合（E05）でエラーになり処理中断する"
 instructions:
   - "レビュー記録サマリ_S16.xlsx はシート名不一致の最小構成ファイル（Sheet1 のみ）"
-  - "VBA がファイルを開いた後、REVIEW_LIST_SHEET（デフォルト名）のシートが存在しないことを検出"
-  - "E05 で中断される"
+  - "REVIEW_LIST_SHEET に存在しないシート名 'レビュー記録一覧' を明示的に指定"
+  - "VBA がファイルを開いた後、指定シートが存在しないことを検出して E05 で中断する"
   - "検証: E05 がログに記録され、設計書に結果シートが生成されないこと"
 
 # review_list_file: "レビュー記録サマリ_S16.xlsx" が存在する（E04 回避）が、
 # ファイル内に期待シートが存在しない（Sheet1 のみ）→ E05 発火
-# REVIEW_LIST_SHEET は xlsm のデフォルト値を使用する
+# REVIEW_LIST_SHEET に存在しないシート名を明示指定することで、テスト意図を明確化する
 setup:
   use_summary: true
   review_list_file: "レビュー記録サマリ_S16.xlsx"
+  named_ranges:
+    REVIEW_LIST_SHEET: "レビュー記録一覧"
 
 steps:
   - action: extract
