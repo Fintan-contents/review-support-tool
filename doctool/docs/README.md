@@ -13,7 +13,6 @@
 | [03-process-flow.md](./03-process-flow.md) | 主要な処理フロー・詳細処理仕様・データフロー |
 | [04-error-handling.md](./04-error-handling.md) | エラーハンドリング・メッセージ一覧 |
 | [05-settings.md](./05-settings.md) | 設定項目一覧・定数定義・改版履歴 |
-| [v2-plan.md](./v2-plan.md) | 動的カテゴリ対応 設計書（2026-03-31） |
 
 ---
 
