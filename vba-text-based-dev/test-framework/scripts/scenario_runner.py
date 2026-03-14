@@ -420,11 +420,20 @@ def _execute_vba(
         print(f"[{scenario_name}] 全ステップ完了")
 
         print(f"[{scenario_name}] ファイルを保存中...")
+        python_opened_names = {wb.name for _, wb in open_wbs} | {XLSM_NAME}
         for _, wb in open_wbs:
             try:
                 wb.save()
             except Exception as e:
                 print(f"[{scenario_name}]   保存警告: {e}")
+        # VBA が自分で開いたファイル（skip_open_files で除外されたもの）も保存する
+        for book in app.books:
+            if book.name not in python_opened_names:
+                try:
+                    book.save()
+                    print(f"[{scenario_name}]   VBA開きファイル保存: {book.name}")
+                except Exception as e:
+                    print(f"[{scenario_name}]   保存警告 (VBA-opened): {e}")
         xlsm_wb.save()
         print(f"[{scenario_name}] Saved → temp_dir/{scenario_name}/")
 
