@@ -1,4 +1,6 @@
-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+Option Explicit
+
 'ヘッダの行、列位置
 Const COL_DOC_ID = 2
 Const ROW_DOC_ID = 2
@@ -95,6 +97,7 @@ Public Sub CmdGen_Click_Core(Optional testMode As Boolean = False)
     Dim rc() As String
     Dim reviewDate As String, reviewStartTime As String, reviewEndTime As String, reviewTime As String
     Dim closeLine As String
+    Dim res As Long
     'レビュー記録一覧へ反映するか
     Dim reviewListFilepath As String
     Dim reviewListFileNm As String
@@ -120,27 +123,16 @@ Public Sub CmdGen_Click_Core(Optional testMode As Boolean = False)
     'レビュー記録票のテンプレート行（コピー元）
     Dim postingTemplateRow As Integer
     Dim useReviewRecord As Boolean
-    useReviewRecord = ThisWorkbook.Worksheets("基本設定").Range("B2").Value
+    useReviewRecord = ThisWorkbook.Worksheets(SHT_KIHON_SETTINGS).Range("B2").Value
     Dim useSimpleSummary As Boolean
-    useSimpleSummary = ThisWorkbook.Worksheets("基本設定").Range("B3").Value
+    useSimpleSummary = ThisWorkbook.Worksheets(SHT_KIHON_SETTINGS).Range("B3").Value
     Dim targetBookNamePattern As Object
-    Set targetBookNamePattern = CreateObject("VBScript.RegExp")
-    With targetBookNamePattern
-        .Pattern = ThisWorkbook.Worksheets("基本設定").Range("B4").Value
-        .IgnoreCase = False
-        .Global = True
-    End With
     Dim noTargetBookNamePattern As Object
-    Set noTargetBookNamePattern = CreateObject("VBScript.RegExp")
-    With noTargetBookNamePattern
-        .Pattern = ThisWorkbook.Worksheets("基本設定").Range("B5").Value
-        .IgnoreCase = False
-        .Global = True
-    End With
+    InitRegexPatterns targetBookNamePattern, noTargetBookNamePattern
     '設定の読み込み
     Dim categoryMappings As Object
     Set categoryMappings = CreateObject("Scripting.Dictionary")
-    With ThisWorkbook.Worksheets("指摘分類マッピング設定")
+    With ThisWorkbook.Worksheets(SHT_CATEGORY_MAPPINGS)
         For row = 2 To .Cells(Application.Rows.count, 1).End(xlUp).row
             Call categoryMappings.Add(.Cells(row, 1).Value, .Cells(row, 2).Value)
         Next row
@@ -152,7 +144,7 @@ Public Sub CmdGen_Click_Core(Optional testMode As Boolean = False)
         Application.Cursor = xlDefault
         Exit Sub
     End If
-    With ThisWorkbook.Worksheets("項目マッピング設定")
+    With ThisWorkbook.Worksheets(SHT_ITEM_MAPPINGS)
         '項目マッピング設定
         '(ヘッダー)シート名
         Dim mappingHeaderSheet As String: mappingHeaderSheet = .Cells(2, 2).Value
@@ -818,7 +810,7 @@ Public Sub CmdGen_Click_Core(Optional testMode As Boolean = False)
                     Dim bookTempSelected As Boolean
                     bookTempSelected = False
                     For Each bookTemp In Application.Workbooks
-                        If InStr(bookTemp.Name, target) > 0 And InStr(bookTemp.Name, "レビュー記録票") > 0 Then
+                        If InStr(bookTemp.Name, target) > 0 And InStr(bookTemp.Name, SHT_REVIEW_RECORD) > 0 Then
                             bookTempSelected = True
                             Exit For
                         End If
@@ -997,6 +989,9 @@ Public Sub CmdGen_Click_Core(Optional testMode As Boolean = False)
                 '----------------------------------------------------------------------------
                 row = DETAIL_START_ROW
                 Dim s As Worksheet
+                Dim cmnt As Comment
+                Dim cc As Variant
+                Dim err_output As Worksheet
                 Dim cmntCell As Range
                 Dim workCommentCells As New Collection
                 Dim workCommentCell(2) As String
@@ -1465,9 +1460,9 @@ End Sub
 Function GetLastChar(str As String)
     Dim work As String
     work = Replace(str, " ", "")
-    work = Replace(str, "　", "")
-    work = Replace(str, vbTab, "")
-    work = Replace(str, vbCr, "")
-    work = Replace(str, vbLf, "")
+    work = Replace(work, "　", "")
+    work = Replace(work, vbTab, "")
+    work = Replace(work, vbCr, "")
+    work = Replace(work, vbLf, "")
     GetLastChar = Right(work, 1)
 End Function

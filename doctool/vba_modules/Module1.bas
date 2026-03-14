@@ -1,4 +1,6 @@
 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+Option Explicit
+
 Dim re As Object
 
 '=====================================================
@@ -6,6 +8,15 @@ Dim re As Object
 ' ENABLE_PERF_LOG = True で計測ON、False で計測OFF（本番運用時は False に設定）
 '=====================================================
 Public Const ENABLE_PERF_LOG As Boolean = False
+
+'=====================================================
+' シート名定数
+'=====================================================
+Public Const SHT_KIHON_SETTINGS As String = "基本設定"
+Public Const SHT_CATEGORY_MAPPINGS As String = "指摘分類マッピング設定"
+Public Const SHT_ITEM_MAPPINGS As String = "項目マッピング設定"
+Public Const SHT_REVIEW_RECORD As String = "レビュー記録票"
+Public Const SHT_PERF_LOG As String = "パフォーマンス計測"
 
 Private timerLabels() As String
 Private timerElapsed() As Double
@@ -46,17 +57,16 @@ End Sub
 
 Public Sub OutputTimerLog(targetWorkbook As Workbook)
     If Not ENABLE_PERF_LOG Then Exit Sub
-    Const PERF_SHEETNAME = "パフォーマンス計測"
     Dim perfSheet As Worksheet
-    If hasSheet(targetWorkbook, PERF_SHEETNAME) Then
-        Set perfSheet = targetWorkbook.Worksheets(PERF_SHEETNAME)
+    If hasSheet(targetWorkbook, SHT_PERF_LOG) Then
+        Set perfSheet = targetWorkbook.Worksheets(SHT_PERF_LOG)
         perfSheet.Cells.ClearContents
     Else
         Application.DisplayAlerts = False
         targetWorkbook.Worksheets.Add After:=targetWorkbook.Worksheets(targetWorkbook.Worksheets.Count)
         Application.DisplayAlerts = True
         Set perfSheet = targetWorkbook.Worksheets(targetWorkbook.Worksheets.Count)
-        perfSheet.Name = PERF_SHEETNAME
+        perfSheet.Name = SHT_PERF_LOG
     End If
     perfSheet.Cells(1, 1).Value = "計測日時"
     perfSheet.Cells(1, 2).Value = Format(timerStartDateTime, "yyyy/mm/dd hh:mm:ss")
@@ -80,8 +90,29 @@ Public Sub initializeModule1()
         .Global = True
     End With
 End Sub
+
+'=====================================================
+' 関数名: InitRegexPatterns
+' 機能: 基本設定シートのB4/B5セルから対象/除外ブック名の正規表現パターンを生成
+' 引数: targetPattern    - 対象ブック名パターン（ByRef、呼び出し元に返す）
+'       noTargetPattern  - 除外ブック名パターン（ByRef、呼び出し元に返す）
+'=====================================================
+Public Sub InitRegexPatterns(ByRef targetPattern As Object, ByRef noTargetPattern As Object)
+    Set targetPattern = CreateObject("VBScript.RegExp")
+    With targetPattern
+        .Pattern = ThisWorkbook.Worksheets(SHT_KIHON_SETTINGS).Range("B4").Value
+        .IgnoreCase = False
+        .Global = True
+    End With
+    Set noTargetPattern = CreateObject("VBScript.RegExp")
+    With noTargetPattern
+        .Pattern = ThisWorkbook.Worksheets(SHT_KIHON_SETTINGS).Range("B5").Value
+        .IgnoreCase = False
+        .Global = True
+    End With
+End Sub
 Public Function hasSheet(book As Workbook, query As String) As Boolean
-    Dim item
+    Dim item As Variant
     For Each item In book.Worksheets
         If item.Name = query Then
             hasSheet = True
@@ -103,6 +134,7 @@ Public Function inStrCount(s As String, query As String) As Integer
 End Function
 Public Function repeat(s As String, cnt As Integer) As String
     Dim work As String
+    Dim i As Long
     work = ""
     For i = 1 To cnt
         work = work & s
