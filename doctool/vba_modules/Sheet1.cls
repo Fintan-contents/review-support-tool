@@ -69,12 +69,31 @@ Const DETAIL_COL_LIST_REVIEW_RESULT = 38
 Const DETAIL_COL_LIST_RE_REVIEW_WAY = 39
 Const DOC_ID_PREFIX = "D"
 ' SheetTemplateのSUMIFエイリアス列開始（列L=12）
+' 計算根拠: COL_CATEGORY_START(2列目) + カテゴリ列最大数(9列) + 小計列(1列) = 12列目
+' カテゴリ数が9未満の場合でも列Lを最小開始位置として確保する
 Const COL_CATEGORY_HEADER_START = 12
+' SheetTemplateのカテゴリ表示エリア行範囲（カテゴリヘッダー・集計行が配置される行）
+Const CATEGORY_DISPLAY_ROW_START = 7
+Const CATEGORY_DISPLAY_ROW_END = 11
+' レビュー記録票シートの行検索上限オフセット
+Const SUMMARY_ROW_SEARCH_LIMIT = 100   ' サマリーシート行検索上限
+Const LIST_ROW_SEARCH_LIMIT = 1000     ' 指摘一覧シート行検索上限
 
 Private Sub CbAdjustCmntPos_Click()
 End Sub
 Private Sub CheckBox1_Click()
 End Sub
+
+'=====================================================
+' サブルーチン名: CleanupOnError
+' 機能: バリデーション失敗・異常終了時の共通クリーンアップ処理
+'       Application状態をリセットしてUIを復元する
+'=====================================================
+Private Sub CleanupOnError()
+    Application.ScreenUpdating = True
+    Application.Cursor = xlDefault
+End Sub
+
 '抽出ボタンクリック
 Private Sub CmdGen_Click()
     'UIボタンから呼ばれる場合はtestMode=False
@@ -96,8 +115,7 @@ Public Sub CmdGen_Click_Core(Optional testMode As Boolean = False)
     Dim categoryMappings As Object
     Set categoryMappings = LoadCategoryMappings(testMode)
     If categoryMappings Is Nothing Then
-        Application.ScreenUpdating = True
-        Application.Cursor = xlDefault
+        CleanupOnError
         Exit Sub
     End If
 
@@ -116,8 +134,7 @@ Public Sub CmdGen_Click_Core(Optional testMode As Boolean = False)
         reviewListPhase, reviewListPhaseSheet, reviewListPhaseCell, _
         reviewListReviewer, reviewListReviewerSheet, reviewListReviewerCell, _
         reviewListReviewee, reviewListRevieweeSheet, reviewListRevieweeCell) Then
-        Application.ScreenUpdating = True
-        Application.Cursor = xlDefault
+        CleanupOnError
         Exit Sub
     End If
 
@@ -127,13 +144,11 @@ Public Sub CmdGen_Click_Core(Optional testMode As Boolean = False)
     If isCopyReviewList Then
         Set reviewListBook = OpenReviewListFile(testMode, reviewListFilepath, reviewListSheet, listSheet)
         If reviewListBook Is Nothing Then
-            Application.ScreenUpdating = True
-            Application.Cursor = xlDefault
+            CleanupOnError
             Exit Sub
         End If
         If Not AdjustReviewListCategoryColumns(listSheet, categoryMappings, testMode) Then
-            Application.ScreenUpdating = True
-            Application.Cursor = xlDefault
+            CleanupOnError
             Exit Sub
         End If
     End If
@@ -185,8 +200,7 @@ Public Sub CmdGen_Click_Core(Optional testMode As Boolean = False)
                         postingRow, postingSummaryRow, postingTemplateRow)
                     If rrResult = 1 Then GoTo NEXTBOOK
                     If rrResult = 2 Then
-                        Application.ScreenUpdating = True
-                        Application.Cursor = xlDefault
+                        CleanupOnError
                         Exit Sub
                     End If
                 End If
@@ -197,8 +211,7 @@ Public Sub CmdGen_Click_Core(Optional testMode As Boolean = False)
                 Set output = PrepareOutputSheet(book, count, categoryMappings, _
                     isCopyReviewList, listSheet, testMode, docId, preDocId, isOverwrite)
                 If output Is Nothing Then
-                    Application.ScreenUpdating = True
-                    Application.Cursor = xlDefault
+                    CleanupOnError
                     Exit Sub
                 End If
 
@@ -250,8 +263,7 @@ NEXTBOOK:
     Exit Sub
 ERROR:
     Module2.ShowMsg testMode, "E11", "処理中にエラーが発生しました。" & Err.Number & vbCrLf & vbCrLf & Err.Description, vbError
-    Application.ScreenUpdating = True
-    Application.Cursor = xlDefault
+    CleanupOnError
 End Sub
 
 '=====================================================
@@ -691,7 +703,7 @@ Public Sub AdjustTemplateCategoryColumns(categoryMappings As Object, _
     clrColEnd = COL_CATEGORY_HEADER_START - 1
     If clrColStart <= clrColEnd Then
         For clrCol = clrColStart To clrColEnd
-            For clrRow = 7 To 11
+            For clrRow = CATEGORY_DISPLAY_ROW_START To CATEGORY_DISPLAY_ROW_END
                 SheetTemplate.Cells(clrRow, clrCol).Interior.ColorIndex = xlNone
             Next clrRow
         Next clrCol
@@ -701,7 +713,7 @@ Public Sub AdjustTemplateCategoryColumns(categoryMappings As Object, _
     End If
     If catColDiff <> 0 Then
         newTotalColBK = COL_CATEGORY_START + categoryMappings.Count
-        For sumRowBK = 7 To 11
+        For sumRowBK = CATEGORY_DISPLAY_ROW_START To CATEGORY_DISPLAY_ROW_END
             If SheetTemplate.Cells(sumRowBK, newTotalColBK).HasFormula Then
                 SheetTemplate.Cells(sumRowBK, newTotalColBK).Formula = _
                     "=SUM(" & SheetTemplate.Cells(sumRowBK, COL_CATEGORY_START).Address(False, False) & _
@@ -929,7 +941,7 @@ Public Function GetReviewRecordSheets(book As Workbook, target As String, count 
         Set postingOutput = bookTemp.Worksheets(mappings.listSheet)
     End If
     If Not postingSummaryOutput Is Nothing Then
-        For postingSummaryRow = mappings.summaryStartRow To (mappings.summaryStartRow + 100)
+        For postingSummaryRow = mappings.summaryStartRow To (mappings.summaryStartRow + SUMMARY_ROW_SEARCH_LIMIT)
             If postingSummaryOutput.Range(mappings.summaryCount & CStr(postingSummaryRow)).Value = "" Or postingSummaryOutput.Range(mappings.summaryCount & CStr(postingSummaryRow)).Value = CStr(count) Then
                 If count > 1 And Not postingSummaryOutput.Range(mappings.summaryCount & CStr(postingSummaryRow - 1)).Value = CStr(count - 1) Then
                     Module2.ShowMsg testMode, "E07", "指定されたレビュー回数が正しくありません。", vbExclamation
@@ -944,19 +956,19 @@ Public Function GetReviewRecordSheets(book As Workbook, target As String, count 
                 Exit For
             End If
         Next postingSummaryRow
-        For postingSummaryRow = mappings.summaryStartRow To (mappings.summaryStartRow + 100)
+        For postingSummaryRow = mappings.summaryStartRow To (mappings.summaryStartRow + SUMMARY_ROW_SEARCH_LIMIT)
             If postingSummaryOutput.Range(mappings.summaryCount & CStr(postingSummaryRow)).Value = "" Or postingSummaryOutput.Range(mappings.summaryCount & CStr(postingSummaryRow)).Value = CStr(count) Then
                 Exit For
             End If
         Next postingSummaryRow
     End If
     If Not postingOutput Is Nothing Then
-        For postingRow = mappings.listStartRow To (mappings.listStartRow + 1000)
+        For postingRow = mappings.listStartRow To (mappings.listStartRow + LIST_ROW_SEARCH_LIMIT)
             If postingOutput.Range(mappings.listCount & CStr(postingRow)).Value = "" Or postingOutput.Range(mappings.listCount & CStr(postingRow)).Value = CStr(count) Then
                 Exit For
             End If
         Next postingRow
-        For postingTemplateRow = mappings.listStartRow To (mappings.listStartRow + 1000)
+        For postingTemplateRow = mappings.listStartRow To (mappings.listStartRow + LIST_ROW_SEARCH_LIMIT)
             If postingOutput.Range(mappings.listCount & CStr(postingTemplateRow)).Value = "" Then
                 Exit For
             End If
@@ -1376,14 +1388,13 @@ Public Sub WriteToReviewList(listSheet As Worksheet, output As Worksheet, _
             listSheet.Cells(listRow - 1, 1).EntireRow.Copy
             listSheet.Cells(listRow, 1).Insert
             Application.CutCopyMode = False
-            listSheet.Cells(listRow, 18) = ""
-            listSheet.Cells(listRow, 19) = ""
-            listSheet.Cells(listRow, 20) = ""
-            listSheet.Cells(listRow, 21) = ""
-            listSheet.Cells(listRow, 22) = ""
-            listSheet.Cells(listRow, 24) = ""
-            listSheet.Cells(listRow, 25) = ""
-            listSheet.Cells(listRow, 40) = ""
+            ' 行コピー後にクリアする列（テンプレートから引き継いだ値をリセット）
+            Dim clearColNums As Variant
+            clearColNums = Array(18, 19, 20, 21, 22, 24, DETAIL_COL_LIST_REVIEW_WAY, 40)
+            Dim ci As Long
+            For ci = LBound(clearColNums) To UBound(clearColNums)
+                listSheet.Cells(listRow, clearColNums(ci)) = ""
+            Next ci
         End If
     End If
     phase = reviewListPhase
