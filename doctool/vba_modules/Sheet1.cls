@@ -98,6 +98,7 @@ Public Sub CmdGen_Click_Core(Optional testMode As Boolean = False)
     Dim reviewDate As String, reviewStartTime As String, reviewEndTime As String, reviewTime As String
     Dim closeLine As String
     Dim res As Long
+    Dim work As Variant
     'レビュー記録一覧へ反映するか
     Dim reviewListFilepath As String
     Dim reviewListFileNm As String
