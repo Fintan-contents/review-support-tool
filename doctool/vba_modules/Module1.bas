@@ -18,6 +18,59 @@ Public Const SHT_ITEM_MAPPINGS As String = "項目マッピング設定"
 Public Const SHT_REVIEW_RECORD As String = "レビュー記録票"
 Public Const SHT_PERF_LOG As String = "パフォーマンス計測"
 
+'=====================================================
+' BasicSettings型定義
+' 基本設定シートから読み込むブール値設定
+' 注: VBAのType定義はObjectフィールドを持てないため、
+'     正規表現パターンはLoadBasicSettingsのByRef引数で返す
+'=====================================================
+Public Type BasicSettings
+    useReviewRecord As Boolean
+    useSimpleSummary As Boolean
+End Type
+
+'=====================================================
+' MappingConfig型定義
+' 項目マッピング設定シートから読み込むマッピング定義
+' ヘッダー/サマリー/指摘一覧の各フィールドのセル参照を保持する
+'=====================================================
+Public Type MappingConfig
+    headerSheet As String
+    headerCount As String
+    headerPhase As String
+    headerVolume As String
+    headerDate As String
+    headerStartTime As String
+    headerEndTime As String
+    headerStartDateTime As String
+    headerEndDateTime As String
+    headerReviewTime As String
+    headerReviewer As String
+    headerReviewee As String
+    summarySheet As String
+    summaryStartRow As Integer
+    summaryCount As String
+    summaryPhase As String
+    summaryVolume As String
+    summaryDate As String
+    summaryStartTime As String
+    summaryEndTime As String
+    summaryStartDateTime As String
+    summaryEndDateTime As String
+    summaryReviewTime As String
+    summaryReviewer As String
+    summaryReviewee As String
+    listSheet As String
+    listStartRow As Integer
+    listCount As String
+    listCategory As String
+    listComment As String
+    listReviewer As String
+    listReply As String
+    listReviewee As String
+    listCloseLine As String
+End Type
+
 Private timerLabels() As String
 Private timerElapsed() As Double
 Private timerInterval() As Double
