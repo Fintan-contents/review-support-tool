@@ -185,6 +185,8 @@ Public Sub CmdGen_Click_Core(Optional testMode As Boolean = False)
     Application.StatusBar = "処理中... ブック処理 0/" & totalMatchingBooks & "冊"
     Dim fileCount As Integer
     fileCount = 0
+    Dim attemptCount As Integer
+    attemptCount = 0
     Dim res As Long
     Dim book As Workbook
     For Each book In Application.Workbooks
@@ -197,8 +199,8 @@ Public Sub CmdGen_Click_Core(Optional testMode As Boolean = False)
                 GoTo NEXTBOOK
             End If
             If res = vbYes Then
-                fileCount = fileCount + 1
-                Application.StatusBar = "処理中... ブック処理 " & fileCount & "/" & totalMatchingBooks & "冊"
+                attemptCount = attemptCount + 1
+                Application.StatusBar = "処理中... ブック処理 " & attemptCount & "/" & totalMatchingBooks & "冊"
                 Dim target As String, count As String
                 target = Mid(book.Name, 1, InStrRev(book.Name, ".") - 1)
                 count = Range("REVIEW_TIMES").Value
@@ -264,6 +266,8 @@ Public Sub CmdGen_Click_Core(Optional testMode As Boolean = False)
                     WriteToReviewRecordSummary postingSummaryOutput, mappings, count, _
                         phase, volume, listReviewer, listReviewee, postingSummaryRow
                 End If
+
+                fileCount = fileCount + 1
 
             End If
         End If
