@@ -16,7 +16,9 @@ SCRIPTS_DIR = Path(__file__).parent
 
 
 def main():
-    filters = sys.argv[1:]
+    args = sys.argv[1:]
+    include_heavy = "--include-heavy" in args
+    filters = [a for a in args if a != "--include-heavy"]
 
     print("=" * 60)
     print("[1/2] 自動テスト実行中...")
@@ -28,6 +30,8 @@ def main():
     ]
     if filters:
         auto_cmd += ["-k", " or ".join(filters)]
+    if include_heavy:
+        auto_cmd += ["--include-heavy"]
     subprocess.run(auto_cmd, check=False)
 
     print()

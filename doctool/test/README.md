@@ -101,10 +101,14 @@ tags:
 **heavy シナリオを含めて全件実行する場合:**
 
 ```bat
-REM pytest に --include-heavy を渡す
-cd doctool\test
-set TOOL_TEST_ROOT=%CD%
-python -m pytest ..\vba-text-based-dev\test-framework\scripts\auto_test_runner.py -v --tb=short -s --include-heavy
+REM bat ファイル経由（推奨）
+run_auto_tests.bat --include-heavy
+
+REM 特定シナリオを heavy 込みで実行
+run_auto_tests.bat --include-heavy scenario35
+
+REM run_tests.bat（自動＋手動）でも同様に使用可
+run_tests.bat --include-heavy
 ```
 
 **デフォルト実行（heavy をスキップ）:**
