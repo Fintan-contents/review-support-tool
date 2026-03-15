@@ -13,17 +13,35 @@ pytest の PASS/FAIL で報告する。
   TOOL_TEST_ROOT: テスト対象ツールの test/ ディレクトリへの絶対パス
 """
 import os
+import sys
 import time
 import pytest
 from datetime import datetime
 from pathlib import Path
 
+# scripts/ ディレクトリが sys.path に含まれていない場合に追加する
+# （pytest が自動追加する場合もあるが、明示的に設定して import エラーを防ぐ）
+_scripts_dir = Path(__file__).resolve().parent
+if str(_scripts_dir) not in sys.path:
+    sys.path.insert(0, str(_scripts_dir))
+
+import yaml
+from adapters import load_adapter
 from helpers.config_loader import load_scenario_config
 from helpers.tee_logger import tee_to_file
 from scenario_runner import run_scenario, evaluate_scenario, TEMP_DIR
 
 
 AUTO_DIR = Path(os.environ["TOOL_TEST_ROOT"]) / "auto"
+
+# ツール固有アダプタを tool_config.yaml から動的ロードする
+def _load_tool_adapter():
+    tool_config_path = Path(os.environ["TOOL_TEST_ROOT"]) / "tool_config.yaml"
+    with open(tool_config_path, encoding="utf-8") as f:
+        tool_config = yaml.safe_load(f)
+    return load_adapter(tool_config)
+
+_adapter = _load_tool_adapter()
 
 
 def _fmt_elapsed(seconds: float) -> str:
@@ -82,8 +100,8 @@ class TestScenarioGoldMaster:
 
             errors = []
             try:
-                work_dir, config = run_scenario(scenario_dir)
-                errors = evaluate_scenario(work_dir, scenario_dir, config)
+                work_dir, config = run_scenario(scenario_dir, adapter=_adapter)
+                errors = evaluate_scenario(work_dir, scenario_dir, config, adapter=_adapter)
             except Exception as e:
                 errors = [str(e)]
                 print(f"[{scenario_name}] ERROR: {e}")

@@ -15,6 +15,9 @@ set TOOL_TEST_ROOT=%~dp0
 
 set FRAMEWORK=..\..\vba-text-based-dev\test-framework\scripts
 
+REM adapters パッケージを含む scripts/ を PYTHONPATH に追加する
+set PYTHONPATH=%~dp0..\..\vba-text-based-dev\test-framework\scripts;%PYTHONPATH%
+
 set HEAVY_FLAG=
 set SCENARIO_COUNT=0
 set SCENARIO_FIRST=

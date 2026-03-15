@@ -15,9 +15,23 @@ import os
 import sys
 from pathlib import Path
 
+# scripts/ ディレクトリが sys.path に含まれていない場合に追加する
+_scripts_dir = Path(__file__).resolve().parent
+if str(_scripts_dir) not in sys.path:
+    sys.path.insert(0, str(_scripts_dir))
+
+import yaml
+from adapters import load_adapter
 from helpers.config_loader import load_scenario_config
 from helpers.tee_logger import tee_to_file, start_session_log, session_header
 from scenario_runner import run_scenario, evaluate_scenario, TEMP_DIR
+
+
+def _load_tool_adapter():
+    tool_config_path = Path(os.environ["TOOL_TEST_ROOT"]) / "tool_config.yaml"
+    with open(tool_config_path, encoding="utf-8") as f:
+        tool_config = yaml.safe_load(f)
+    return load_adapter(tool_config)
 
 
 MANUAL_BASE = Path(os.environ["TOOL_TEST_ROOT"]) / "manual"
@@ -96,8 +110,9 @@ def _run_manual_tests_inner(filter_names: list[str] = None):
         scenario_log = TEMP_DIR / f"{scenario_name}_test.log"
         with tee_to_file(scenario_log):
             try:
-                work_dir, config = run_scenario(scenario_src_dir)
-                errors = evaluate_scenario(work_dir, scenario_src_dir, config)
+                adapter = _load_tool_adapter()
+                work_dir, config = run_scenario(scenario_src_dir, adapter=adapter)
+                errors = evaluate_scenario(work_dir, scenario_src_dir, config, adapter=adapter)
 
                 if errors:
                     print(f"\n[{scenario_name}] FAIL")
