@@ -4,20 +4,12 @@ Option Explicit
 Dim re As Object
 
 '=====================================================
-' パフォーマンス計測
-' ENABLE_PERF_LOG = True で計測ON、False で計測OFF（本番運用時は False に設定）
-'=====================================================
-Public Const ENABLE_PERF_LOG As Boolean = False
-
-'=====================================================
 ' シート名定数
 '=====================================================
 Public Const SHT_KIHON_SETTINGS As String = "基本設定"
 Public Const SHT_CATEGORY_MAPPINGS As String = "指摘分類マッピング設定"
 Public Const SHT_ITEM_MAPPINGS As String = "項目マッピング設定"
 Public Const SHT_REVIEW_RECORD As String = "レビュー記録票"
-Public Const SHT_PERF_LOG As String = "パフォーマンス計測"
-
 '=====================================================
 ' BasicSettings型定義
 ' 基本設定シートから読み込むブール値設定
@@ -71,68 +63,6 @@ Public Type MappingConfig
     listCloseLine As String
 End Type
 
-Private timerLabels() As String
-Private timerElapsed() As Double
-Private timerInterval() As Double
-Private timerLogCount As Long
-Private timerStartTime As Double
-Private timerStartDateTime As Date
-
-Public Sub InitTimerLog()
-    If Not ENABLE_PERF_LOG Then Exit Sub
-    timerLogCount = 0
-    ReDim timerLabels(0)
-    ReDim timerElapsed(0)
-    ReDim timerInterval(0)
-    timerStartTime = Timer
-    timerStartDateTime = Now
-End Sub
-
-Public Sub RecordTimer(label As String)
-    If Not ENABLE_PERF_LOG Then Exit Sub
-    Dim elapsed As Double
-    Dim interval As Double
-    elapsed = Timer - timerStartTime
-    If elapsed < 0 Then elapsed = elapsed + 86400  ' 日付またぎ補正
-    If timerLogCount = 0 Then
-        interval = 0
-    Else
-        interval = elapsed - timerElapsed(timerLogCount - 1)
-    End If
-    ReDim Preserve timerLabels(timerLogCount)
-    ReDim Preserve timerElapsed(timerLogCount)
-    ReDim Preserve timerInterval(timerLogCount)
-    timerLabels(timerLogCount) = label
-    timerElapsed(timerLogCount) = elapsed
-    timerInterval(timerLogCount) = interval
-    timerLogCount = timerLogCount + 1
-End Sub
-
-Public Sub OutputTimerLog(targetWorkbook As Workbook)
-    If Not ENABLE_PERF_LOG Then Exit Sub
-    Dim perfSheet As Worksheet
-    If hasSheet(targetWorkbook, SHT_PERF_LOG) Then
-        Set perfSheet = targetWorkbook.Worksheets(SHT_PERF_LOG)
-        perfSheet.Cells.ClearContents
-    Else
-        Application.DisplayAlerts = False
-        targetWorkbook.Worksheets.Add After:=targetWorkbook.Worksheets(targetWorkbook.Worksheets.Count)
-        Application.DisplayAlerts = True
-        Set perfSheet = targetWorkbook.Worksheets(targetWorkbook.Worksheets.Count)
-        perfSheet.Name = SHT_PERF_LOG
-    End If
-    perfSheet.Cells(1, 1).Value = "計測日時"
-    perfSheet.Cells(1, 2).Value = Format(timerStartDateTime, "yyyy/mm/dd hh:mm:ss")
-    perfSheet.Cells(3, 1).Value = "フェーズ"
-    perfSheet.Cells(3, 2).Value = "全体経過(秒)"
-    perfSheet.Cells(3, 3).Value = "区間(秒)"
-    Dim i As Long
-    For i = 0 To timerLogCount - 1
-        perfSheet.Cells(i + 4, 1).Value = timerLabels(i)
-        perfSheet.Cells(i + 4, 2).Value = timerElapsed(i)
-        perfSheet.Cells(i + 4, 3).Value = timerInterval(i)
-    Next i
-End Sub
 Public Sub initializeModule1()
     If Not re Is Nothing Then
         Set re = Nothing
