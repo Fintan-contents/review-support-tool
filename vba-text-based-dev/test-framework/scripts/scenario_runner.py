@@ -341,6 +341,13 @@ def _execute_vba(
         print(f"[{scenario_name}] Excel を起動中... (visible={visible})")
         app = xw.App(visible=visible)
 
+        # Excel 起動時に自動作成されるデフォルトブック（Book1 等）を閉じる
+        for book in list(app.books):
+            try:
+                book.close()
+            except Exception:
+                pass
+
         for f in open_files:
             print(f"[{scenario_name}] ファイルを開く: {f.name}")
             wb = app.books.open(str(f))

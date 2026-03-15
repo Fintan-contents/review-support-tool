@@ -45,7 +45,7 @@ def kill_excel_processes():
 def pytest_addoption(parser):
     """カスタムコマンドラインオプションを追加"""
     parser.addoption(
-        "--include-heavy",
+        "--include-heavy", "-H",
         action="store_true",
         default=False,
         help="Include scenarios tagged as 'heavy' (default: skip heavy scenarios)",

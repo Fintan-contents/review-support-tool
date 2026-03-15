@@ -3,6 +3,10 @@
 temp_dir/*
 !temp_dir/.gitkeep
 
+# Excel 起動時にデフォルトで作成されるブック（コミット対象外）
+Book*.xlsx
+Book*.xls
+
 # Python cache
 __pycache__/
 *.pyc

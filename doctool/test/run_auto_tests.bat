@@ -4,7 +4,7 @@ REM Usage:
 REM   run_auto_tests.bat                                       - Run all auto scenarios
 REM   run_auto_tests.bat scenario04                            - Run specific scenario
 REM   run_auto_tests.bat scenario07 scenario08                 - Run multiple scenarios
-REM   run_auto_tests.bat --include-heavy                       - Run all (including heavy scenarios)
+REM   run_auto_tests.bat --include-heavy (-H)                  - Run all (including heavy scenarios)
 REM   run_auto_tests.bat --include-heavy scenario04            - Run specific scenario (including heavy)
 REM   run_auto_tests.bat scenario07 scenario08 --include-heavy - Run multiple (including heavy)
 REM
@@ -23,6 +23,11 @@ set FILTER=
 :parse_args
 if "%~1"=="" goto dispatch
 if "%~1"=="--include-heavy" (
+    set HEAVY_FLAG=--include-heavy
+    shift
+    goto parse_args
+)
+if "%~1"=="-H" (
     set HEAVY_FLAG=--include-heavy
     shift
     goto parse_args

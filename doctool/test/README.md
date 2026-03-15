@@ -103,12 +103,16 @@ tags:
 ```bat
 REM bat ファイル経由（推奨）
 run_auto_tests.bat --include-heavy
+REM 短縮形 -H も使用可
+run_auto_tests.bat -H
 
 REM 特定シナリオを heavy 込みで実行
 run_auto_tests.bat --include-heavy scenario35
+run_auto_tests.bat -H scenario35
 
 REM run_tests.bat（自動＋手動）でも同様に使用可
 run_tests.bat --include-heavy
+run_tests.bat -H
 ```
 
 **デフォルト実行（heavy をスキップ）:**
