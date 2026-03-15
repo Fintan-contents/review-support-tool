@@ -52,15 +52,15 @@
 | 関数名 | 戻り値 | 説明 |
 |-------|-------|------|
 | `OpenReviewListFile(testMode, filepath, sheet, listSheet)` | Workbook | レビュー記録一覧ファイルをオープン（バックアップ作成含む。失敗時は Nothing） |
-| `AdjustReviewListCategoryColumns(listSheet, categoryMappings, testMode)` | Boolean | レビュー記録一覧のカテゴリ列数調整（E13照合・列挿入削除・SUM式更新・印刷範囲更新） |
+| `AdjustReviewListCategoryColumns(listSheet, categoryMappings, testMode)` | Boolean | レビュー記録一覧のカテゴリ列数調整（E13照合・列挿入削除・SUM式更新・印刷範囲更新）。大量カテゴリ対応のため列操作ループ内に DoEvents を挿入済み（10回ごと）。 |
 
 #### Phase 3: SheetTemplate調整
 
 | 関数名 | 戻り値 | 説明 |
 |-------|-------|------|
-| `AdjustTemplateCategoryColumns(categoryMappings, tplSumifStartCol, catColDiff, actualSumifStart, templateCatCount, savedHelperWidth, savedSumifColWidth)` | Sub | カテゴリ列数調整（列挿入削除・ColumnWidth・条件付き書式・SUM式・印刷範囲）。後続処理に必要な6値をByRefで返す |
-| `AdjustTemplateSumifColumns(categoryMappings, tplSumifStartCol, templateSumifCount)` | Sub | SUMIF列数調整 |
-| `FixTemplateGapAndFormulas(categoryMappings, tplSumifStartCol, catColDiff, actualSumifStart, templateCatCount, savedHelperWidth, savedSumifColWidth)` | Sub | ギャップ列削除・SUMIF参照修正・列幅復元 |
+| `AdjustTemplateCategoryColumns(categoryMappings, tplSumifStartCol, catColDiff, actualSumifStart, templateCatCount, savedHelperWidth, savedSumifColWidth)` | Sub | カテゴリ列数調整（列挿入削除・ColumnWidth・条件付き書式・SUM式・印刷範囲）。後続処理に必要な6値をByRefで返す。大量カテゴリ対応のため列操作ループ内に DoEvents を挿入済み（10回ごと）。 |
+| `AdjustTemplateSumifColumns(categoryMappings, tplSumifStartCol, templateSumifCount)` | Sub | SUMIF列数調整。大量カテゴリ対応のため列操作ループ内に DoEvents を挿入済み（10回ごと）。 |
+| `FixTemplateGapAndFormulas(categoryMappings, tplSumifStartCol, catColDiff, actualSumifStart, templateCatCount, savedHelperWidth, savedSumifColWidth)` | Sub | ギャップ列削除・SUMIF参照修正・列幅復元。大量カテゴリ対応のためSUMIF式修正ループ内に DoEvents を挿入済み（10回ごと）。 |
 | `UpdateTemplateHeaders(categoryMappings, tplSumifStartCol, templateSumifCount)` | Sub | 行7/8/14のカテゴリヘッダー書換 |
 
 #### Phase 4: ブックループ処理
@@ -120,14 +120,6 @@
 | `ExtractCategory(commentText)` | String | コメントからカテゴリ（1〜2文字）を抽出 |
 | `IsValidCategory(category, categoryMappings)` | Boolean | カテゴリが設定シートに登録済みかチェック |
 | `extractCloseLine(commentText)` | String | コメントから「済」を含む行を抽出 |
-
-#### パフォーマンス計測（`ENABLE_PERF_LOG = True` 時のみ有効）
-
-| 関数名 | 戻り値 | 説明 |
-|-------|-------|------|
-| `InitTimerLog()` | Sub | 計測タイマー初期化 |
-| `RecordTimer(label)` | Sub | 計測ポイントの記録 |
-| `OutputTimerLog(targetWorkbook)` | Sub | 計測結果をパフォーマンス計測シートへ出力 |
 
 ---
 

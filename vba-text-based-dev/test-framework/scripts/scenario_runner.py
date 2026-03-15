@@ -22,6 +22,7 @@ import yaml
 DIALOG_LOG_FILENAME = "dialog_log.txt"
 
 import openpyxl
+import pywintypes
 import xlwings as xw
 
 from helpers.config_loader import load_scenario_config, validate_step
@@ -399,7 +400,7 @@ def _execute_vba(
                     if test_mode:
                         xlsm_wb.macro("Module2.ClearDialogLog")()
                     print(f"[{scenario_name}]   マクロ実行中 (run {run_num + 1}/{repeat})...")
-                    macro(test_mode)
+                    _run_macro_with_retry(scenario_name, macro, test_mode)
                     if test_mode:
                         _flush_dialog_log(scenario_name, xlsm_wb, work_dir)
 
@@ -478,6 +479,32 @@ def _flush_dialog_log(scenario_name: str, xlsm_wb, work_dir: Path) -> None:
         for line in dialog_log.split("\n"):
             if line:
                 print(f"[{scenario_name}]   [LOG] {line}")
+
+
+def _run_macro_with_retry(scenario_name: str, macro, test_mode: bool, max_retries: int = 3) -> None:
+    """VBAマクロをCOMエラー時にリトライ付きで実行する。
+
+    エラーコード 0x80010100 (RPC_E_SERVERCALL_ISBUSY) は Excel が COM メッセージポンプに
+    応答できない状態を示す。一時的なビジー状態のため、待機後に再試行することで回復できる。
+    """
+    # COM_E_SERVER_ISBUSY: Excelがビジー状態でCOM呼び出しに応答できない
+    COM_E_SERVER_ISBUSY = -2147417856  # 0x80010100
+    retry_wait_seconds = 4
+
+    for attempt in range(1, max_retries + 2):
+        try:
+            macro(test_mode)
+            return
+        except pywintypes.com_error as e:
+            hresult = e.hresult if hasattr(e, "hresult") else (e.args[0] if e.args else None)
+            if hresult == COM_E_SERVER_ISBUSY and attempt <= max_retries:
+                print(
+                    f"[{scenario_name}]   COMエラー (0x80010100: サーバービジー)。"
+                    f"{retry_wait_seconds}秒後にリトライ ({attempt}/{max_retries})..."
+                )
+                time.sleep(retry_wait_seconds)
+            else:
+                raise
 
 
 def _run_delete_macro(

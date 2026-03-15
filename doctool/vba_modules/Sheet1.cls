@@ -557,6 +557,7 @@ Public Function AdjustReviewListCategoryColumns(listSheet As Worksheet, _
                             listSheet.Cells(DETAIL_ROW_LIST_START, listRightmostCol + 1)).PasteSpecial Paste:=xlPasteAll
             Application.CutCopyMode = False
             listSheet.Columns(listRightmostCol + 1).ColumnWidth = listSheet.Columns(listRightmostCol).ColumnWidth
+            If listColInsertIdx Mod 10 = 0 Then DoEvents
         Next listColInsertIdx
         If listNoteCol > 0 Then
             listSheet.Columns(listNoteCol + listCatColDiff).ColumnWidth = savedListNoteColWidth
@@ -577,6 +578,7 @@ Public Function AdjustReviewListCategoryColumns(listSheet As Worksheet, _
             listSheet.Range(listSheet.Cells(1, listRightmostCol), _
                             listSheet.Cells(DETAIL_ROW_LIST_START, listRightmostCol)).Delete Shift:=xlShiftToLeft
             listSheet.Columns(listRightmostCol).ColumnWidth = savedNextColWidthList
+            If listColInsertIdx Mod 10 = 0 Then DoEvents
         Next listColInsertIdx
     End If
     If listCatColDiff <> 0 Then
@@ -680,6 +682,7 @@ Public Sub AdjustTemplateCategoryColumns(categoryMappings As Object, _
             SheetTemplate.Range(SheetTemplate.Cells(7, rightmostBK + 1), SheetTemplate.Cells(11, rightmostBK + 1)).PasteSpecial Paste:=xlPasteAll
             Application.CutCopyMode = False
             SheetTemplate.Columns(rightmostBK + 1).ColumnWidth = SheetTemplate.Columns(rightmostBK).ColumnWidth
+            If bkInsertIdx Mod 10 = 0 Then DoEvents
         Next bkInsertIdx
         If SheetTemplate.Cells(DETAIL_START_ROW, 1).FormatConditions.Count > 0 Then
             SheetTemplate.Cells(DETAIL_START_ROW, 1).FormatConditions(1).ModifyAppliesToRange _
@@ -693,6 +696,7 @@ Public Sub AdjustTemplateCategoryColumns(categoryMappings As Object, _
             savedNextColWidthBK = SheetTemplate.Columns(rightmostBK + 1).ColumnWidth
             SheetTemplate.Range(SheetTemplate.Cells(7, rightmostBK), SheetTemplate.Cells(11, rightmostBK)).Delete Shift:=xlShiftToLeft
             SheetTemplate.Columns(rightmostBK).ColumnWidth = savedNextColWidthBK
+            If bkInsertIdx Mod 10 = 0 Then DoEvents
         Next bkInsertIdx
     End If
     Dim clrCol As Long
@@ -769,12 +773,14 @@ Public Sub AdjustTemplateSumifColumns(categoryMappings As Object, _
             SheetTemplate.Range(SheetTemplate.Cells(DETAIL_START_ROW - 1, rightmostLT + 1), _
                                  SheetTemplate.Cells(DETAIL_START_ROW + 1, rightmostLT + 1)).PasteSpecial Paste:=xlPasteAll
             Application.CutCopyMode = False
+            If ltInsertIdx Mod 10 = 0 Then DoEvents
         Next ltInsertIdx
     ElseIf sumifColDiff < 0 Then
         For ltInsertIdx = 1 To Abs(sumifColDiff)
             rightmostLT = tplSumifStartCol + templateSumifCount - ltInsertIdx
             SheetTemplate.Range(SheetTemplate.Cells(1, rightmostLT), _
                                  SheetTemplate.Cells(DETAIL_START_ROW + 1, rightmostLT)).Delete Shift:=xlShiftToLeft
+            If ltInsertIdx Mod 10 = 0 Then DoEvents
         Next ltInsertIdx
     End If
 End Sub
@@ -832,6 +838,7 @@ Public Sub FixTemplateGapAndFormulas(categoryMappings As Object, _
                     Chr(34) & Chr(34) & ",SUMIF($K15:$K16,$A" & fixRow & "," & _
                     fixColAddr & "15:" & fixColAddr & "16))"
             Next fixRow
+            If (fixCatIdx - templateCatCount) Mod 10 = 0 Then DoEvents
         Next fixCatIdx
     End If
     Dim newHelperCol As Long
