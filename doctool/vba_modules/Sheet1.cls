@@ -92,6 +92,7 @@ End Sub
 Private Sub CleanupOnError()
     Application.ScreenUpdating = True
     Application.Cursor = xlDefault
+    Application.StatusBar = False
 End Sub
 
 '抽出ボタンクリック
@@ -107,6 +108,7 @@ Public Sub CmdGen_Click_Core(Optional testMode As Boolean = False)
     initializeModule1
 
     ' Phase 1: 設定読み込み
+    Application.StatusBar = "処理中... 設定読み込み"
     Dim targetBookNamePattern As Object
     Dim noTargetBookNamePattern As Object
     Dim settings As BasicSettings
@@ -123,6 +125,7 @@ Public Sub CmdGen_Click_Core(Optional testMode As Boolean = False)
     mappings = LoadItemMappings()
 
     ' Phase 2: バリデーション・レビュー記録一覧変数の初期化
+    Application.StatusBar = "処理中... バリデーション"
     Dim reviewListFilepath As String
     Dim reviewListSheet As String
     Dim reviewListPhase As String, reviewListPhaseSheet As String, reviewListPhaseCell As String
@@ -139,6 +142,7 @@ Public Sub CmdGen_Click_Core(Optional testMode As Boolean = False)
     End If
 
     ' Phase 3: レビュー記録一覧ファイル操作
+    Application.StatusBar = "処理中... レビュー記録一覧ファイル操作"
     Dim reviewListBook As Workbook
     Dim listSheet As Worksheet
     If isCopyReviewList Then
@@ -154,6 +158,7 @@ Public Sub CmdGen_Click_Core(Optional testMode As Boolean = False)
     End If
 
     ' Phase 4: SheetTemplate調整
+    Application.StatusBar = "処理中... テンプレート調整"
     Dim tplSumifStartCol As Long
     Dim catColDiff As Long
     Dim actualSumifStart As Long
@@ -169,6 +174,15 @@ Public Sub CmdGen_Click_Core(Optional testMode As Boolean = False)
     UpdateTemplateHeaders categoryMappings, tplSumifStartCol, templateSumifCount
 
     ' Phase 5: 対象ブックへの抽出処理ループ
+    Dim totalMatchingBooks As Integer
+    totalMatchingBooks = 0
+    Dim preCountBook As Workbook
+    For Each preCountBook In Application.Workbooks
+        If targetBookNamePattern.test(preCountBook.Name) And Not noTargetBookNamePattern.test(preCountBook.Name) Then
+            totalMatchingBooks = totalMatchingBooks + 1
+        End If
+    Next preCountBook
+    Application.StatusBar = "処理中... ブック処理 0/" & totalMatchingBooks & "冊"
     Dim fileCount As Integer
     fileCount = 0
     Dim res As Long
@@ -183,6 +197,8 @@ Public Sub CmdGen_Click_Core(Optional testMode As Boolean = False)
                 GoTo NEXTBOOK
             End If
             If res = vbYes Then
+                fileCount = fileCount + 1
+                Application.StatusBar = "処理中... ブック処理 " & fileCount & "/" & totalMatchingBooks & "冊"
                 Dim target As String, count As String
                 target = Mid(book.Name, 1, InStrRev(book.Name, ".") - 1)
                 count = Range("REVIEW_TIMES").Value
@@ -249,12 +265,12 @@ Public Sub CmdGen_Click_Core(Optional testMode As Boolean = False)
                         phase, volume, listReviewer, listReviewee, postingSummaryRow
                 End If
 
-                fileCount = fileCount + 1
             End If
         End If
 NEXTBOOK:
     Next book
     Application.Cursor = xlDefault
+    Application.StatusBar = False
     If fileCount = 0 Then
         Module2.ShowMsg testMode, "E08", "レビュー対象文書が見つかりません。", vbExclamation
     Else
@@ -546,6 +562,7 @@ Public Function AdjustReviewListCategoryColumns(listSheet As Worksheet, _
         savedListPastNote3Width = listSheet.Columns(listNoteCol + 3).ColumnWidth
     End If
     If listCatColDiff > 0 Then
+        Application.StatusBar = "処理中... レビュー一覧列調整 1/" & listCatColDiff
         For listColInsertIdx = 1 To listCatColDiff
             listRightmostCol = DETAIL_COL_LIST_CATEGORY_A + listTplCatCount + listColInsertIdx - 2
             Application.CutCopyMode = False
@@ -557,7 +574,10 @@ Public Function AdjustReviewListCategoryColumns(listSheet As Worksheet, _
                             listSheet.Cells(DETAIL_ROW_LIST_START, listRightmostCol + 1)).PasteSpecial Paste:=xlPasteAll
             Application.CutCopyMode = False
             listSheet.Columns(listRightmostCol + 1).ColumnWidth = listSheet.Columns(listRightmostCol).ColumnWidth
-            If listColInsertIdx Mod 10 = 0 Then DoEvents
+            If listColInsertIdx Mod 10 = 0 Or listColInsertIdx = listCatColDiff Then
+                Application.StatusBar = "処理中... レビュー一覧列調整 " & listColInsertIdx & "/" & listCatColDiff
+                DoEvents
+            End If
         Next listColInsertIdx
         If listNoteCol > 0 Then
             listSheet.Columns(listNoteCol + listCatColDiff).ColumnWidth = savedListNoteColWidth
@@ -572,13 +592,19 @@ Public Function AdjustReviewListCategoryColumns(listSheet As Worksheet, _
             Next listNonCatColIdx
         End If
     ElseIf listCatColDiff < 0 Then
-        For listColInsertIdx = 1 To Abs(listCatColDiff)
+        Dim listAbsCatColDiff As Long
+        listAbsCatColDiff = Abs(listCatColDiff)
+        Application.StatusBar = "処理中... レビュー一覧列調整 1/" & listAbsCatColDiff
+        For listColInsertIdx = 1 To listAbsCatColDiff
             listRightmostCol = DETAIL_COL_LIST_CATEGORY_A + listTplCatCount - listColInsertIdx
             savedNextColWidthList = listSheet.Columns(listRightmostCol + 1).ColumnWidth
             listSheet.Range(listSheet.Cells(1, listRightmostCol), _
                             listSheet.Cells(DETAIL_ROW_LIST_START, listRightmostCol)).Delete Shift:=xlShiftToLeft
             listSheet.Columns(listRightmostCol).ColumnWidth = savedNextColWidthList
-            If listColInsertIdx Mod 10 = 0 Then DoEvents
+            If listColInsertIdx Mod 10 = 0 Or listColInsertIdx = listAbsCatColDiff Then
+                Application.StatusBar = "処理中... レビュー一覧列調整 " & listColInsertIdx & "/" & listAbsCatColDiff
+                DoEvents
+            End If
         Next listColInsertIdx
     End If
     If listCatColDiff <> 0 Then
@@ -674,6 +700,7 @@ Public Sub AdjustTemplateCategoryColumns(categoryMappings As Object, _
             SheetTemplate.Cells(1, actualSumifStart), _
             SheetTemplate.Cells(16, actualSumifStart + catColDiff - 1) _
         ).Insert Shift:=xlShiftToRight
+        Application.StatusBar = "処理中... カテゴリ列調整 1/" & catColDiff
         For bkInsertIdx = 1 To catColDiff
             rightmostBK = COL_CATEGORY_START + templateCatCount + bkInsertIdx - 2
             Application.CutCopyMode = False
@@ -682,7 +709,10 @@ Public Sub AdjustTemplateCategoryColumns(categoryMappings As Object, _
             SheetTemplate.Range(SheetTemplate.Cells(7, rightmostBK + 1), SheetTemplate.Cells(11, rightmostBK + 1)).PasteSpecial Paste:=xlPasteAll
             Application.CutCopyMode = False
             SheetTemplate.Columns(rightmostBK + 1).ColumnWidth = SheetTemplate.Columns(rightmostBK).ColumnWidth
-            If bkInsertIdx Mod 10 = 0 Then DoEvents
+            If bkInsertIdx Mod 10 = 0 Or bkInsertIdx = catColDiff Then
+                Application.StatusBar = "処理中... カテゴリ列調整 " & bkInsertIdx & "/" & catColDiff
+                DoEvents
+            End If
         Next bkInsertIdx
         If SheetTemplate.Cells(DETAIL_START_ROW, 1).FormatConditions.Count > 0 Then
             SheetTemplate.Cells(DETAIL_START_ROW, 1).FormatConditions(1).ModifyAppliesToRange _
@@ -691,12 +721,18 @@ Public Sub AdjustTemplateCategoryColumns(categoryMappings As Object, _
                     SheetTemplate.Cells(DETAIL_START_ROW + 1, COL_CATEGORY_HEADER_START - 1))
         End If
     ElseIf catColDiff < 0 Then
-        For bkInsertIdx = 1 To Abs(catColDiff)
+        Dim absCatColDiff As Long
+        absCatColDiff = Abs(catColDiff)
+        Application.StatusBar = "処理中... カテゴリ列調整 1/" & absCatColDiff
+        For bkInsertIdx = 1 To absCatColDiff
             rightmostBK = COL_CATEGORY_START + templateCatCount - bkInsertIdx
             savedNextColWidthBK = SheetTemplate.Columns(rightmostBK + 1).ColumnWidth
             SheetTemplate.Range(SheetTemplate.Cells(7, rightmostBK), SheetTemplate.Cells(11, rightmostBK)).Delete Shift:=xlShiftToLeft
             SheetTemplate.Columns(rightmostBK).ColumnWidth = savedNextColWidthBK
-            If bkInsertIdx Mod 10 = 0 Then DoEvents
+            If bkInsertIdx Mod 10 = 0 Or bkInsertIdx = absCatColDiff Then
+                Application.StatusBar = "処理中... カテゴリ列調整 " & bkInsertIdx & "/" & absCatColDiff
+                DoEvents
+            End If
         Next bkInsertIdx
     End If
     Dim clrCol As Long
@@ -763,6 +799,7 @@ Public Sub AdjustTemplateSumifColumns(categoryMappings As Object, _
     Dim ltInsertIdx As Long
     Dim rightmostLT As Long
     If sumifColDiff > 0 Then
+        Application.StatusBar = "処理中... SUMIF数式生成 1/" & sumifColDiff
         For ltInsertIdx = 1 To sumifColDiff
             rightmostLT = tplSumifStartCol + templateSumifCount + ltInsertIdx - 2
             Application.CutCopyMode = False
@@ -773,14 +810,23 @@ Public Sub AdjustTemplateSumifColumns(categoryMappings As Object, _
             SheetTemplate.Range(SheetTemplate.Cells(DETAIL_START_ROW - 1, rightmostLT + 1), _
                                  SheetTemplate.Cells(DETAIL_START_ROW + 1, rightmostLT + 1)).PasteSpecial Paste:=xlPasteAll
             Application.CutCopyMode = False
-            If ltInsertIdx Mod 10 = 0 Then DoEvents
+            If ltInsertIdx Mod 10 = 0 Or ltInsertIdx = sumifColDiff Then
+                Application.StatusBar = "処理中... SUMIF数式生成 " & ltInsertIdx & "/" & sumifColDiff
+                DoEvents
+            End If
         Next ltInsertIdx
     ElseIf sumifColDiff < 0 Then
-        For ltInsertIdx = 1 To Abs(sumifColDiff)
+        Dim absSumifColDiff As Long
+        absSumifColDiff = Abs(sumifColDiff)
+        Application.StatusBar = "処理中... SUMIF列削除 1/" & absSumifColDiff
+        For ltInsertIdx = 1 To absSumifColDiff
             rightmostLT = tplSumifStartCol + templateSumifCount - ltInsertIdx
             SheetTemplate.Range(SheetTemplate.Cells(1, rightmostLT), _
                                  SheetTemplate.Cells(DETAIL_START_ROW + 1, rightmostLT)).Delete Shift:=xlShiftToLeft
-            If ltInsertIdx Mod 10 = 0 Then DoEvents
+            If ltInsertIdx Mod 10 = 0 Or ltInsertIdx = absSumifColDiff Then
+                Application.StatusBar = "処理中... SUMIF列削除 " & ltInsertIdx & "/" & absSumifColDiff
+                DoEvents
+            End If
         Next ltInsertIdx
     End If
 End Sub
@@ -826,6 +872,9 @@ Public Sub FixTemplateGapAndFormulas(categoryMappings As Object, _
         Dim fixSumifCol As Long
         Dim fixRow As Long
         Dim fixColAddr As String
+        Dim fixTotalCount As Long
+        fixTotalCount = categoryMappings.Count - templateCatCount
+        Application.StatusBar = "処理中... SUMIF数式修正 1/" & fixTotalCount
         For fixCatIdx = templateCatCount To categoryMappings.Count - 1
             fixCatCol = COL_CATEGORY_START + fixCatIdx
             fixSumifCol = tplSumifStartCol + fixCatIdx
@@ -838,7 +887,12 @@ Public Sub FixTemplateGapAndFormulas(categoryMappings As Object, _
                     Chr(34) & Chr(34) & ",SUMIF($K15:$K16,$A" & fixRow & "," & _
                     fixColAddr & "15:" & fixColAddr & "16))"
             Next fixRow
-            If (fixCatIdx - templateCatCount) Mod 10 = 0 Then DoEvents
+            Dim fixProgress As Long
+            fixProgress = fixCatIdx - templateCatCount + 1
+            If fixProgress Mod 10 = 0 Or fixProgress = fixTotalCount Then
+                Application.StatusBar = "処理中... SUMIF数式修正 " & fixProgress & "/" & fixTotalCount
+                DoEvents
+            End If
         Next fixCatIdx
     End If
     Dim newHelperCol As Long
@@ -1109,7 +1163,11 @@ Public Sub ExtractReviewComments(book As Workbook, output As Worksheet, _
     Dim workCommentCells As New Collection
     Dim workCommentCell(2) As String
     Dim err_row As Long
+    Dim sheetIdx As Integer
+    Dim sheetCount As Integer
     errcount = 0
+    sheetCount = book.Worksheets.Count
+    sheetIdx = 0
     Application.ScreenUpdating = False
     If isOverwrite And settings.useReviewRecord And Not postingOutput Is Nothing And Len(mappings.listCount) > 0 Then
         Dim clearRow As Long
@@ -1163,6 +1221,8 @@ Public Sub ExtractReviewComments(book As Workbook, output As Worksheet, _
     Dim replyComment As String
     Dim position As String
     For Each s In book.Worksheets
+        sheetIdx = sheetIdx + 1
+        Application.StatusBar = "処理中... コメント抽出 シート" & sheetIdx & "/" & sheetCount
         For Each cmnt In s.comments
             Dim commentText As String
             commentText = cmnt.Text

@@ -212,6 +212,40 @@ flowchart TD
 
 ---
 
+## ステータスバー進捗表示
+
+`ScreenUpdating = False` で描画を止めている間も、`Application.StatusBar` は更新可能なため、処理の進捗状況をExcelの画面下部ステータスバーに表示する。
+
+### フェーズ単位の表示（CmdGen_Click_Core）
+
+| フェーズ | 表示内容 |
+|---------|---------|
+| Phase 1: 設定読み込み | `処理中... 設定読み込み` |
+| Phase 2: バリデーション | `処理中... バリデーション` |
+| Phase 3: レビュー記録一覧ファイル操作 | `処理中... レビュー記録一覧ファイル操作` |
+| Phase 4: SheetTemplate調整 | `処理中... テンプレート調整` |
+| Phase 5: ブック処理ループ | `処理中... ブック処理 n/total冊` |
+| 完了時 | `False`（ステータスバーをリセット） |
+
+### ループ内の進捗表示
+
+重いループ内では DoEvents と同じ頻度（10〜20イテレーションごと、最初・最後は必ず表示）で更新する。
+
+| 関数 | 表示形式 |
+|------|---------|
+| `AdjustTemplateCategoryColumns` | `処理中... カテゴリ列調整 n/total` |
+| `AdjustTemplateSumifColumns` | `処理中... SUMIF数式生成 n/total` / `処理中... SUMIF列削除 n/total` |
+| `FixTemplateGapAndFormulas` | `処理中... SUMIF数式修正 n/total` |
+| `AdjustReviewListCategoryColumns` | `処理中... レビュー一覧列調整 n/total` |
+| `ExtractReviewComments` | `処理中... コメント抽出 シートn/total` |
+
+### リセット処理
+
+- 正常完了時（`CmdGen_Click_Core` 末尾）: `Application.StatusBar = False`
+- エラー時（`CleanupOnError` 内）: `Application.StatusBar = False`
+
+---
+
 ## 詳細処理仕様
 
 > **実装メモ（2026-03-15更新）**: `CmdGen_Click_Core` は約160行のオーケストレーション関数に分割済み。以下の「詳細処理仕様」はフローの概要を示すものであり、実際のロジックは 18 の Public Sub/Function（`LoadBasicSettings`・`LoadCategoryMappings` 等）に分散している。各関数の詳細は [02-vba-modules.md](./02-vba-modules.md) を参照。

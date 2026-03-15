@@ -10,6 +10,7 @@
 Private Sub CleanupOnError()
     Application.ScreenUpdating = True
     Application.Cursor = xlDefault
+    Application.StatusBar = False
 End Sub
 ```
 
