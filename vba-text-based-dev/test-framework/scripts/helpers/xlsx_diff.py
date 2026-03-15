@@ -2,10 +2,22 @@
 
 期待結果xlsx（Gold Master）と実際の出力xlsxを比較し、差分を検出する。
 """
+import sys
+from pathlib import Path
 import openpyxl
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Optional
+
+# adapters パッケージを sys.path に追加（scripts/ 配下の adapters/ を参照するため）
+_scripts_dir = Path(__file__).resolve().parent.parent
+if str(_scripts_dir) not in sys.path:
+    sys.path.insert(0, str(_scripts_dir))
+
+try:
+    from adapters import ComparisonConfig as _ComparisonConfig
+except ImportError:
+    _ComparisonConfig = None  # type: ignore[assignment,misc]
 
 
 @dataclass
@@ -135,7 +147,9 @@ def compare_workbooks(
     compare_col_widths: bool = False,
     compare_print_area: bool = False,
     compare_borders: bool = False,
-    max_diffs: int = 10
+    compare_comments: bool = True,
+    max_diffs: int = 10,
+    comparison_config: Optional["_ComparisonConfig"] = None,
 ) -> DiffResult:
     """2つのxlsxファイルをセル値ベースで比較する
 
@@ -151,11 +165,21 @@ def compare_workbooks(
         compare_col_widths: Trueの場合、明示設定された列幅を比較する
         compare_print_area: Trueの場合、印刷範囲を比較する
         compare_borders: Trueの場合、セルの4辺罫線（スタイル・色）を比較する
+        compare_comments: Trueの場合、セルのコメント（メモ）を比較する
         max_diffs: 報告する差分の最大数（デバッグ容易性のため制限）
+        comparison_config: ComparisonConfig を指定した場合、個別フラグより優先される。
+            後方互換: None の場合は従来の個別フラグ引数を使用する。
 
     Returns:
         DiffResult: 比較結果（一致/不一致 + 差分詳細リスト）
     """
+    # ComparisonConfig が指定された場合は個別フラグを上書き
+    if comparison_config is not None:
+        compare_fill = comparison_config.fill_colors
+        compare_col_widths = comparison_config.column_widths
+        compare_print_area = comparison_config.print_area
+        compare_borders = comparison_config.borders
+        compare_comments = comparison_config.comments
     try:
         actual = openpyxl.load_workbook(actual_path, data_only=True)
         expected = openpyxl.load_workbook(expected_path, data_only=True)
@@ -239,20 +263,21 @@ def compare_workbooks(
                             return DiffResult(matches=False, diffs=diffs)
 
                 # コメント（メモ）の比較
-                ac = aws.cell(row, col).comment
-                ec = ews.cell(row, col).comment
-                ac_text = ac.text.strip() if ac else None
-                ec_text = ec.text.strip() if ec else None
-                if ac_text != ec_text:
-                    ac_repr = repr(ac_text[:50] + "...") if ac_text and len(ac_text) > 50 else repr(ac_text)
-                    ec_repr = repr(ec_text[:50] + "...") if ec_text and len(ec_text) > 50 else repr(ec_text)
-                    diffs.append(
-                        f"[{sheet_name}!{cell_ref}] comment: actual={ac_repr} != expected={ec_repr}"
-                    )
+                if compare_comments:
+                    ac = aws.cell(row, col).comment
+                    ec = ews.cell(row, col).comment
+                    ac_text = ac.text.strip() if ac else None
+                    ec_text = ec.text.strip() if ec else None
+                    if ac_text != ec_text:
+                        ac_repr = repr(ac_text[:50] + "...") if ac_text and len(ac_text) > 50 else repr(ac_text)
+                        ec_repr = repr(ec_text[:50] + "...") if ec_text and len(ec_text) > 50 else repr(ec_text)
+                        diffs.append(
+                            f"[{sheet_name}!{cell_ref}] comment: actual={ac_repr} != expected={ec_repr}"
+                        )
 
-                    if len(diffs) >= max_diffs:
-                        diffs.append(f"... (差分数が{max_diffs}件を超えたため省略)")
-                        return DiffResult(matches=False, diffs=diffs)
+                        if len(diffs) >= max_diffs:
+                            diffs.append(f"... (差分数が{max_diffs}件を超えたため省略)")
+                            return DiffResult(matches=False, diffs=diffs)
 
                 # 罫線の比較
                 if compare_borders:

@@ -5,7 +5,7 @@ Reads config.yaml from scenario directories to define test steps.
 
 import os
 import yaml
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 
 
 def load_scenario_config(scenario_dir: str) -> Dict[str, Any]:
@@ -37,27 +37,67 @@ def load_scenario_config(scenario_dir: str) -> Dict[str, Any]:
     if "steps" not in config:
         raise ValueError(f"Missing 'steps' in config.yaml for {scenario_dir}")
 
+    # compare: セクションのバリデーション（任意キー）
+    if "compare" in config:
+        _validate_compare_section(config["compare"], scenario_dir)
+
     return config
 
 
-def validate_step(step: Dict[str, Any]) -> None:
+def _validate_compare_section(compare: Any, scenario_dir: str) -> None:
+    """config.yaml の compare: セクションを検証する。
+
+    Args:
+        compare: config["compare"] の値
+        scenario_dir: エラーメッセージ用のシナリオディレクトリ
+
+    Raises:
+        ValueError: compare セクションの形式が不正な場合
+    """
+    if not isinstance(compare, dict):
+        raise ValueError(
+            f"Invalid 'compare' section in {scenario_dir}: must be a mapping"
+        )
+    valid_keys = {"values", "formulas", "comments", "borders", "column_widths", "print_area", "fill_colors"}
+    for key, val in compare.items():
+        if key not in valid_keys:
+            raise ValueError(
+                f"Unknown comparison item '{key}' in {scenario_dir}. "
+                f"Valid items: {sorted(valid_keys)}"
+            )
+        if not isinstance(val, bool):
+            raise ValueError(
+                f"Comparison item '{key}' must be a boolean in {scenario_dir}, got {type(val).__name__}"
+            )
+
+
+_DEFAULT_VALID_ACTIONS = ["extract", "delete_comments", "delete_sheets"]
+
+
+def validate_step(
+    step: Dict[str, Any],
+    valid_actions: Optional[List[str]] = None,
+) -> None:
     """
     Validate a single step configuration.
-    
+
     Args:
         step: Step dictionary with 'action' and optional parameters
-        
+        valid_actions: Allowed action names. Defaults to the standard doctool
+            action set ["extract", "delete_comments", "delete_sheets"].
+            Pass a custom list to support tool-specific actions.
+
     Raises:
         ValueError: If step format is invalid
     """
     if "action" not in step:
         raise ValueError(f"Missing 'action' in step: {step}")
-    
+
     action = step["action"]
-    valid_actions = ["extract", "delete_comments", "delete_sheets"]
-    
-    if action not in valid_actions:
-        raise ValueError(f"Invalid action '{action}'. Must be one of {valid_actions}")
+    allowed = valid_actions if valid_actions is not None else _DEFAULT_VALID_ACTIONS
+
+    if action not in allowed:
+        raise ValueError(f"Invalid action '{action}'. Must be one of {allowed}")
     
     if action == "extract":
         if "review_times" not in step:
