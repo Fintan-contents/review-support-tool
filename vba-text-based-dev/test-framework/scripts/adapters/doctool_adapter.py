@@ -130,6 +130,70 @@ class DoctoolAdapter(BaseToolAdapter):
         """
         return _evaluate_template_assertions(work_dir, assertions, self.XLSM_NAME)
 
+    def execute_steps(
+        self,
+        scenario_name: str,
+        xlsm_wb: Any,
+        steps: List[Dict[str, Any]],
+        test_mode: bool,
+        work_dir: Path,
+        platform: Any,
+    ) -> None:
+        """doctool の全ステップを実行する。
+
+        extract / delete_comments / delete_sheets の各アクションを処理する。
+        scenario_runner.py の _execute_vba() のアクションループと同等の処理を行う。
+
+        Args:
+            scenario_name: ログ用シナリオ名
+            xlsm_wb: xlwings Workbook オブジェクト（xlsm）
+            steps: config.yaml の steps リスト
+            test_mode: testMode フラグ（True=自動、False=手動）
+            work_dir: テスト作業ディレクトリ
+            platform: ExcelPlatform インスタンス（マクロリトライ実行に使用）
+        """
+        from helpers.config_loader import validate_step
+
+        macro = xlsm_wb.macro(self.get_macro_entry_point())
+
+        for step_idx, step in enumerate(steps, 1):
+            validate_step(step)
+            action = step["action"]
+
+            if action == "extract":
+                # ステップ固有のカテゴリ設定（省略時はグローバル setup.categories を維持）
+                if "categories" in step:
+                    self._apply_categories(scenario_name, xlsm_wb, step["categories"])
+
+                review_times = step["review_times"]
+                repeat = step.get("repeat", 1)
+                print(
+                    f"[{scenario_name}] Step {step_idx}: extract"
+                    f" (REVIEW_TIMES={review_times}, repeat={repeat})"
+                )
+                for run_num in range(repeat):
+                    xlsm_wb.names["REVIEW_TIMES"].refers_to_range.value = review_times
+                    if test_mode:
+                        xlsm_wb.macro("Module2.ClearDialogLog")()
+                    print(f"[{scenario_name}]   マクロ実行中 (run {run_num + 1}/{repeat})...")
+                    platform.run_macro_with_retry(scenario_name, macro, test_mode)
+                    if test_mode:
+                        self._flush_dialog_log(scenario_name, xlsm_wb, work_dir)
+
+            elif action == "delete_comments":
+                print(f"[{scenario_name}] Step {step_idx}: delete_comments")
+                self._run_delete_macro(
+                    scenario_name, xlsm_wb,
+                    "Module2.DelAllReviewComments_Click_Core", test_mode, work_dir,
+                )
+
+            elif action == "delete_sheets":
+                print(f"[{scenario_name}] Step {step_idx}: delete_sheets")
+                self._run_delete_macro(
+                    scenario_name, xlsm_wb,
+                    "Module2.DelAllReviewResultSheets_Click_Core", test_mode, work_dir,
+                )
+
     def teardown(self) -> None:
         pass
 
@@ -137,14 +201,24 @@ class DoctoolAdapter(BaseToolAdapter):
     # doctool 固有の内部メソッド
     # =====================================================================
 
-    def run_delete_macro(
+    def _flush_dialog_log(self, scenario_name: str, xlsm_wb: Any, work_dir: Path) -> None:
+        """VBA ダイアログログを dialog_log.txt に追記し、コンソールにも出力する。"""
+        dialog_log = xlsm_wb.macro("Module2.GetDialogLog")()
+        if dialog_log:
+            log_path = work_dir / _DIALOG_LOG_FILENAME
+            with open(log_path, "a", encoding="utf-8") as f:
+                f.write(dialog_log + "\n")
+            for line in dialog_log.split("\n"):
+                if line:
+                    print(f"[{scenario_name}]   [LOG] {line}")
+
+    def _run_delete_macro(
         self,
         scenario_name: str,
         xlsm_wb: Any,
         macro_path: str,
         test_mode: bool,
         work_dir: Path,
-        flush_dialog_log_fn: Any,
     ) -> None:
         """削除系マクロを実行する（doctool 固有）。
 
@@ -157,12 +231,11 @@ class DoctoolAdapter(BaseToolAdapter):
             macro_path: 実行するマクロのフルパス
             test_mode: testMode フラグ（True=自動、False=手動）
             work_dir: テスト作業ディレクトリ
-            flush_dialog_log_fn: ダイアログログ取得関数（scenario_runner._flush_dialog_log）
         """
         try:
             xlsm_wb.macro("Module2.ClearDialogLog")()
             xlsm_wb.macro(macro_path)(test_mode)
-            flush_dialog_log_fn(scenario_name, xlsm_wb, work_dir)
+            self._flush_dialog_log(scenario_name, xlsm_wb, work_dir)
         except Exception as e:
             print(f"[{scenario_name}]   Warning: {e}")
 

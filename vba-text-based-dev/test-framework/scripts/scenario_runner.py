@@ -43,20 +43,34 @@ XLSM_PATH = (TOOL_TEST_ROOT / _tool_cfg["xlsm_path"]).resolve()
 XLSM_NAME = _tool_cfg["xlsm_name"]
 
 
-def run_scenario(scenario_src_dir: Path) -> tuple[Path, dict]:
+def run_scenario(scenario_src_dir: Path, adapter=None) -> tuple[Path, dict]:
     """シナリオを実行し、(作業ディレクトリ, config) を返す。
+
+    adapter が指定された場合は ExecutionOrchestrator 経由の新しいパスを使用する。
+    adapter が None の場合は _legacy_run_scenario() を呼び、従来動作を維持する。
 
     config.yaml の mode が "manual" の場合は visible=True / testMode=False、
     それ以外は visible=False / testMode=True で実行する。
 
-    実行後の actual ファイルは TEMP_DIR/シナリオ名/ に残るので、
-    差分確認やデバッグに利用できる。
-
     Args:
         scenario_src_dir: シナリオのソースディレクトリ（auto/ or manual/ 配下）
+        adapter: ToolAdapter 実装（None の場合はレガシーパスを使用）
 
     Returns:
         tuple: (work_dir, config)
+    """
+    if adapter is None:
+        return _legacy_run_scenario(scenario_src_dir)
+
+    from adapters.execution_orchestrator import get_orchestrator
+    return get_orchestrator(XLSM_PATH, XLSM_NAME, TEMP_DIR).run_scenario(scenario_src_dir, adapter)
+
+
+def _legacy_run_scenario(scenario_src_dir: Path) -> tuple[Path, dict]:
+    """旧来のシナリオ実行（doctool 固有実装・後方互換）。
+
+    adapter 引数なしで run_scenario() を呼んだ場合に使用される。
+    既存の全シナリオとの互換性を保つため、このメソッドの内容は変更しない。
     """
     config = load_scenario_config(str(scenario_src_dir))
     is_manual = config.get("mode") == "manual"
@@ -168,8 +182,11 @@ def evaluate_template_assertions(
     return errors
 
 
-def evaluate_scenario(work_dir: Path, scenario_src_dir: Path, config: dict) -> list[str]:
+def evaluate_scenario(work_dir: Path, scenario_src_dir: Path, config: dict, adapter=None) -> list[str]:
     """シナリオ結果を評価し、エラーメッセージのリストを返す。
+
+    adapter が指定された場合は ExecutionOrchestrator 経由の新しいパスを使用する。
+    adapter が None の場合は従来の doctool 固有実装を維持する。
 
     評価内容:
       1. file_expectations に指定されたファイル: assert_no_sheets などを評価
@@ -183,6 +200,12 @@ def evaluate_scenario(work_dir: Path, scenario_src_dir: Path, config: dict) -> l
     Returns:
         list[str]: エラーメッセージのリスト（空なら全アサーション通過）
     """
+    if adapter is not None:
+        from adapters.execution_orchestrator import get_orchestrator
+        return get_orchestrator(XLSM_PATH, XLSM_NAME, TEMP_DIR).evaluate_scenario(
+            work_dir, scenario_src_dir, config, adapter
+        )
+
     expectations = config.get("file_expectations", [])
     excluded_cells = config.get("excluded_cells", [])
     errors = []

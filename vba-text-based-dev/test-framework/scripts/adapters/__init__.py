@@ -176,6 +176,30 @@ class ToolAdapter(Protocol):
         """
         ...
 
+    def execute_steps(
+        self,
+        scenario_name: str,
+        xlsm_wb: Any,
+        steps: List[Dict[str, Any]],
+        test_mode: bool,
+        work_dir: Path,
+        platform: Any,
+    ) -> None:
+        """シナリオの全ステップを実行する（ツール固有のアクション実装）。
+
+        ExecutionOrchestrator._execute_vba から呼ばれる。
+        ツール固有のアクション（extract / delete_comments 等）の実行ロジックを実装する。
+
+        Args:
+            scenario_name: ログ用シナリオ名
+            xlsm_wb: xlwings Workbook オブジェクト（xlsm）
+            steps: config.yaml の steps リスト
+            test_mode: testMode フラグ（True=自動、False=手動）
+            work_dir: テスト作業ディレクトリ
+            platform: ExcelPlatform インスタンス（マクロ実行リトライ等に使用）
+        """
+        ...
+
     def teardown(self) -> None:
         """テスト後のクリーンアップ処理。"""
         ...
@@ -233,6 +257,19 @@ class BaseToolAdapter:
         assertions: List[Dict[str, Any]],
     ) -> List[str]:
         return []  # デフォルト: アサーションなし
+
+    def execute_steps(
+        self,
+        scenario_name: str,
+        xlsm_wb: Any,
+        steps: List[Dict[str, Any]],
+        test_mode: bool,
+        work_dir: Path,
+        platform: Any,
+    ) -> None:
+        raise NotImplementedError(
+            f"{self.__class__.__name__} は execute_steps() を実装する必要があります"
+        )
 
     def teardown(self) -> None:
         pass  # デフォルト: 何もしない
