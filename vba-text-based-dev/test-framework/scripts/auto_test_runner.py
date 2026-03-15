@@ -48,17 +48,26 @@ class TestScenarioGoldMaster:
 
     @pytest.mark.parametrize("scenario_dir", discover_scenarios(), ids=lambda s: s.name)
     @pytest.mark.vba
-    def test_scenario_gold_master(self, scenario_dir, timing_tracker):
+    def test_scenario_gold_master(self, scenario_dir, timing_tracker, request):
         """シナリオの Gold Master 比較テスト
 
         1. scenario_runner.run_scenario() で VBA を実行
         2. scenario_runner.evaluate_scenario() で結果を評価
         3. エラーがあれば pytest.fail() で報告
 
+        タグフィルタリング:
+          config.yaml に tags: [heavy] が設定されているシナリオは、
+          デフォルトではスキップされる。--include-heavy オプションで実行可能。
+
         ログ: temp_dir/<scenario_name>_test.log に保存（セッションログにも含まれる）
         """
         scenario_name = scenario_dir.name
         config = load_scenario_config(str(scenario_dir))
+
+        # タグフィルタリング: heavy タグのシナリオは --include-heavy なしでスキップ
+        tags = config.get("tags", [])
+        if "heavy" in tags and not request.config.getoption("--include-heavy"):
+            pytest.skip(f"SKIP: {scenario_name} (tag: heavy) - use --include-heavy to run")
         log_path = TEMP_DIR / f"{scenario_name}_test.log"
 
         start_time = time.time()

@@ -83,6 +83,41 @@ run_tests.bat scenario07 scenario08
 - **バックグラウンド実行（自動テスト）**: Excel を非表示で実行（`visible=False`）
 - **フォアグラウンド実行（手動テスト）**: Excel を表示して実行（`visible=True`）、ダイアログはユーザーが操作
 
+### タグによるシナリオフィルタリング
+
+`config.yaml` の `tags` フィールドでシナリオにタグを付与できる。
+
+```yaml
+# heavy タグの例（S35 などの重負荷シナリオ）
+tags:
+  - heavy
+```
+
+| タグ | 意味 | デフォルト動作 |
+|------|------|--------------|
+| （なし） | 通常シナリオ | デフォルトで実行 |
+| `heavy` | 実行時間が長い重負荷シナリオ | デフォルトでスキップ |
+
+**heavy シナリオを含めて全件実行する場合:**
+
+```bat
+REM pytest に --include-heavy を渡す
+cd doctool\test
+set TOOL_TEST_ROOT=%CD%
+python -m pytest ..\vba-text-based-dev\test-framework\scripts\auto_test_runner.py -v --tb=short -s --include-heavy
+```
+
+**デフォルト実行（heavy をスキップ）:**
+
+```bat
+run_auto_tests.bat
+```
+
+スキップ時のログ出力例:
+```
+SKIP: scenario35 (tag: heavy) - use --include-heavy to run
+```
+
 ### config.yaml の書き方
 
 自動・手動テストで共通のスキーマを使用する。

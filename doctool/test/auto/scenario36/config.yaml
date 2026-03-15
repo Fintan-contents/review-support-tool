@@ -1,0 +1,81 @@
+viewpoint: '観点71: 30カテゴリ設定（a～z, aa, ab, ac, ad）でレビュー記録サマリ・レビュー記録票使用時、全カテゴリのコメントが正しく抽出される（通常回帰テスト）'
+instructions:
+- 30カテゴリ設定 + レビュー記録サマリ使用 + レビュー記録票使用 で抽出実行
+- '検証: 30カテゴリ（a～z, aa, ab, ac, ad）のコメントが正しく抽出されること'
+- template_assertions でテンプレートのカテゴリ列数を検証（Gold Master は別途 Windows 環境で作成）
+setup:
+  use_review_record: true
+  use_summary: true
+  review_list_file: レビュー記録サマリ_S36.xlsx
+skip_open_files:
+- レビュー記録サマリ.*\.xlsx
+steps:
+- action: extract
+  review_times: 1
+  categories:
+  - alias: a
+    name: 分類001_a
+  - alias: b
+    name: 分類002_b
+  - alias: c
+    name: 分類003_c
+  - alias: d
+    name: 分類004_d
+  - alias: e
+    name: 分類005_e
+  - alias: f
+    name: 分類006_f
+  - alias: g
+    name: 分類007_g
+  - alias: h
+    name: 分類008_h
+  - alias: i
+    name: 分類009_i
+  - alias: j
+    name: 分類010_j
+  - alias: k
+    name: 分類011_k
+  - alias: l
+    name: 分類012_l
+  - alias: m
+    name: 分類013_m
+  - alias: n
+    name: 分類014_n
+  - alias: o
+    name: 分類015_o
+  - alias: p
+    name: 分類016_p
+  - alias: q
+    name: 分類017_q
+  - alias: r
+    name: 分類018_r
+  - alias: s
+    name: 分類019_s
+  - alias: t
+    name: 分類020_t
+  - alias: u
+    name: 分類021_u
+  - alias: v
+    name: 分類022_v
+  - alias: w
+    name: 分類023_w
+  - alias: x
+    name: 分類024_x
+  - alias: y
+    name: 分類025_y
+  - alias: z
+    name: 分類026_z
+  - alias: aa
+    name: 分類027_aa
+  - alias: ab
+    name: 分類028_ab
+  - alias: ac
+    name: 分類029_ac
+  - alias: ad
+    name: 分類030_ad
+expected_messages:
+- C02
+- I01
+template_assertions:
+- sheet: レビュー結果シートテンプレート
+  category_count: 30
