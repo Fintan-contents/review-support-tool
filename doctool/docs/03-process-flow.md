@@ -214,6 +214,8 @@ flowchart TD
 
 ## 詳細処理仕様
 
+> **実装メモ（2026-03-15更新）**: `CmdGen_Click_Core` は約160行のオーケストレーション関数に分割済み。以下の「詳細処理仕様」はフローの概要を示すものであり、実際のロジックは 18 の Public Sub/Function（`LoadBasicSettings`・`LoadCategoryMappings` 等）に分散している。各関数の詳細は [02-vba-modules.md](./02-vba-modules.md) を参照。
+
 ### CmdGen_Click（メイン処理）の詳細
 
 #### 1. 初期化フェーズ

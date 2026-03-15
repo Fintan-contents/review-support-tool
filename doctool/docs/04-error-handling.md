@@ -2,6 +2,31 @@
 
 ---
 
+## CleanupOnError パターン
+
+`CmdGen_Click_Core` 内のバリデーション失敗・異常終了時は、共通クリーンアップ Sub `CleanupOnError` を呼び出してから `Exit Sub` する。
+
+```vba
+Private Sub CleanupOnError()
+    Application.ScreenUpdating = True
+    Application.Cursor = xlDefault
+End Sub
+```
+
+**適用箇所**（`CmdGen_Click_Core` 内）:
+
+| 箇所 | 条件 |
+|------|------|
+| `LoadCategoryMappings` 失敗 | カテゴリ0件（E12）またはシート未存在 |
+| `ValidateReviewListInputs` 失敗 | E01〜E05 いずれか |
+| `OpenReviewListFile` 失敗 | E04/E05（ファイル・シート未存在） |
+| `AdjustReviewListCategoryColumns` 失敗 | E13（カテゴリ不一致） |
+| `GetReviewRecordSheets` 戻り値=2 | E06/E07（レビュー記録票シート問題） |
+| `PrepareOutputSheet` 失敗 | E13（出力シートでカテゴリ不一致） |
+| `On Error GoTo ERROR` ハンドラ | 予期しない実行時エラー（E11） |
+
+---
+
 ## 同じレビュー回数での重複実行
 
 **状況**:

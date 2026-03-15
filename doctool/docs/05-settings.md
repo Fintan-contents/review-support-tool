@@ -92,6 +92,27 @@
 
 ### 定数定義
 
+#### Module1.bas 公開定数（シート名）
+
+```vba
+Public Const SHT_KIHON_SETTINGS As String = "基本設定"
+Public Const SHT_CATEGORY_MAPPINGS As String = "指摘分類マッピング設定"
+Public Const SHT_ITEM_MAPPINGS As String = "項目マッピング設定"
+Public Const SHT_REVIEW_RECORD As String = "レビュー記録票"
+Public Const SHT_PERF_LOG As String = "パフォーマンス計測"
+```
+
+#### Module1.bas 型定義（User Defined Type）
+
+```vba
+Public Type BasicSettings
+    useReviewRecord As Boolean    ' レビュー記録票の使用（基本設定シート B2）
+    useSimpleSummary As Boolean   ' レビュー記録サマリの使用（基本設定シート B3）
+End Type
+```
+
+`MappingConfig` 型は項目マッピング設定シートの転記先定義（34フィールド）を保持する。フィールドは `headerXxx`（ヘッダシート）・`summaryXxx`（サマリシート）・`listXxx`（指摘一覧シート）の3系統。
+
 #### ヘッダの行・列位置
 
 ```vba
@@ -131,6 +152,22 @@ Const DETAIL_COL_REVIEWER = 3       ' 指摘者の列
 Const DETAIL_COL_CATEGORY = 4       ' 指摘種別の列
 Const DETAIL_COL_REVIEW_COMMENT = 5 ' 指摘内容の列
 Const DETAIL_COL_FIX_STATUS = 11    ' 対応状況の列
+```
+
+#### Sheet1.cls 追加定数（SheetTemplate・検索上限）
+
+```vba
+' SheetTemplateのSUMIFエイリアス列開始（列L=12）
+' COL_CATEGORY_START(2) + カテゴリ列最大数(9) + 小計列(1) = 12
+Const COL_CATEGORY_HEADER_START = 12
+
+' カテゴリ表示エリア行範囲（行7〜11: ヘッダー・集計行）
+Const CATEGORY_DISPLAY_ROW_START = 7
+Const CATEGORY_DISPLAY_ROW_END = 11
+
+' レビュー記録票シートの行検索上限オフセット
+Const SUMMARY_ROW_SEARCH_LIMIT = 100    ' サマリシート行検索上限
+Const LIST_ROW_SEARCH_LIMIT = 1000      ' 指摘一覧シート行検索上限
 ```
 
 ### レビュー記録一覧の列位置
@@ -189,6 +226,7 @@ Const DETAIL_COL_LIST_CATEGORY_START = 29  ' 指摘分類の開始列（2026-03-
 | 1 | 2026-03-04 | 1.0 | Claude Code | VBAコード解析により現状の詳細設計書を作成 |
 | 2 | 2026-03-06 | 1.1 | Claude Code | docs/ へ分割・現行仕様（Phase1+Phase2実装済み）に整理 |
 | 3 | 2026-03-07 | 1.2 | Claude Code | 動的カテゴリ対応仕様を反映：エイリアス体系セクション追加、カテゴリ列定数を動的方式（CATEGORY_START）に更新 |
+| 4 | 2026-03-15 | 1.3 | Claude Code | cmd_289 VBA改善を反映：SHT_*定数・BasicSettings型・MappingConfig型・SheetTemplate定数（CATEGORY_DISPLAY_ROW_START/END・SUMMARY/LIST_ROW_SEARCH_LIMIT）を追加 |
 
 ---
 
