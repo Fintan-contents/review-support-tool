@@ -1,0 +1,53 @@
+viewpoint: '観点77: 条件付合格の場合、REVIEW_RESULT値"条件付合格"が正しい列（DETAIL_COL_LIST_CATEGORY_A + 12 = 列41）に書き込まれる'
+instructions:
+- 12カテゴリ設定（a-l）+ "j"のコメントのみ（2件、閾値3以下）+ CbConditional=True
+- 'CONDITIONAL_CATEGORY="j"、CONDITIONAL_COUNT=3 を設定'
+- 'jのみ件数2 → 条件を満たし reviewResult="条件付合格" が生成されること'
+- '検証: "条件付合格"が DETAIL_COL_LIST_CATEGORY_A + 12 の列に書き込まれること'
+- Gold Master は VBA 修正後に Windows 環境で作成
+
+setup:
+  use_review_record: true
+  use_summary: true
+  review_list_file: レビュー記録サマリ_S41.xlsx
+  controls:
+    CbConditional: true
+  named_ranges:
+    CONDITIONAL_CATEGORY: j
+    CONDITIONAL_COUNT: 3
+skip_open_files:
+- レビュー記録サマリ.*\.xlsx
+steps:
+- action: extract
+  review_times: 1
+  categories:
+  - alias: a
+    name: 分類001_a
+  - alias: b
+    name: 分類002_b
+  - alias: c
+    name: 分類003_c
+  - alias: d
+    name: 分類004_d
+  - alias: e
+    name: 分類005_e
+  - alias: f
+    name: 分類006_f
+  - alias: g
+    name: 分類007_g
+  - alias: h
+    name: 分類008_h
+  - alias: i
+    name: 分類009_i
+  - alias: j
+    name: 分類010_j
+  - alias: k
+    name: 分類011_k
+  - alias: l
+    name: 分類012_l
+expected_messages:
+- C02
+- I01
+template_assertions:
+- sheet: レビュー結果シートテンプレート
+  category_count: 12
