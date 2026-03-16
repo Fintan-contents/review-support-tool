@@ -403,13 +403,26 @@ def _execute_vba(
                     except Exception as e:
                         print(f"[{scenario_name}] setup: named_ranges warning [{range_name}]: {e}")
             if "controls" in setup:
-                sheet1 = xlsm_wb.sheets["Sheet1"]
-                for control_name, value in setup["controls"].items():
+                # VBA コード名 "Sheet1" のシートをタブ名によらず検索する
+                # xlsm_wb.sheets["Sheet1"] はタブ名で検索するため、タブ名が異なると
+                # pywintypes.com_error (-2147352567) が発生する
+                target_sheet = None
+                for sheet in xlsm_wb.sheets:
                     try:
-                        sheet1.api.OLEObjects(control_name).Object.Value = value
-                        print(f"[{scenario_name}] setup: controls[{control_name}]={repr(value)}")
-                    except Exception as e:
-                        print(f"[{scenario_name}] setup: controls warning [{control_name}]: {e}")
+                        if sheet.api.CodeName == "Sheet1":
+                            target_sheet = sheet
+                            break
+                    except Exception:
+                        pass
+                if target_sheet is None:
+                    print(f"[{scenario_name}] setup: controls warning: VBA コード名 'Sheet1' のシートが見つかりません")
+                else:
+                    for control_name, value in setup["controls"].items():
+                        try:
+                            target_sheet.api.OLEObjects(control_name).Object.Value = value
+                            print(f"[{scenario_name}] setup: controls[{control_name}]={repr(value)}")
+                        except Exception as e:
+                            print(f"[{scenario_name}] setup: controls warning [{control_name}]: {e}")
             if "item_mapping_cells" in setup:
                 map_ws = xlsm_wb.sheets["項目マッピング設定"]
                 for cell_ref, value in setup["item_mapping_cells"].items():
