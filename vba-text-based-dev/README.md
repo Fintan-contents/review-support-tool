@@ -27,22 +27,20 @@ Excel VBA マクロには以下の課題があります：
 flowchart LR
     subgraph git["Git 管理（差分・コードレビュー可能）"]
         direction TB
-        vba_text["📝 vba_modules/\n*.cls / *.bas\nテキストファイル"]
-        xlsm_file["📊 *.xlsm\nバイナリファイル"]
+        vba_text["📝 vba_modules/<br/>*.cls / *.bas<br/>テキストファイル"]
+        xlsm_file["📊 *.xlsm<br/>バイナリファイル"]
     end
 
-    editor["テキストエディタで\nVBA コードを編集"]
-    build_script["build_vba.py\nテキスト → xlsm に統合"]
-    extract_script["extract_vba.py\nxlsm → テキストに抽出"]
-    tests["run_auto_tests.bat\n自動回帰テスト"]
+    editor["テキストエディタで<br/>VBA コードを編集"]
+    build_script["build_vba.py<br/>テキスト → xlsm に統合"]
+    extract_script["extract_vba.py<br/>xlsm → テキストに抽出"]
+    tests["run_auto_tests.bat<br/>自動回帰テスト"]
 
     editor -->|保存| vba_text
     vba_text -->|"② build.bat"| build_script
     build_script -->|xlsm を更新| xlsm_file
     xlsm_file -->|"③ テスト実行"| tests
-    xlsm_file -. "extract.bat
-（VBA エディタで直接
-修正した場合のみ）" .-> extract_script
+    xlsm_file -. "extract.bat<br/>（VBA エディタで直接<br/>修正した場合のみ）" .-> extract_script
     extract_script -. テキストを同期 .-> vba_text
 ```
 
@@ -54,17 +52,17 @@ flowchart LR
 flowchart TD
     start(["VBA コードを変更する"])
 
-    start --> s1["① vba_modules/ の\nテキストファイルを編集\n（VSCode 等）"]
-    s1 --> s2["② build.bat を実行\nbuild_vba.py が\nテキストを xlsm に反映"]
-    s2 --> s3["③ run_auto_tests.bat\n自動回帰テスト"]
+    start --> s1["① vba_modules/ の<br/>テキストファイルを編集<br/>（VSCode 等）"]
+    s1 --> s2["② build.bat を実行<br/>build_vba.py が<br/>テキストを xlsm に反映"]
+    s2 --> s3["③ run_auto_tests.bat<br/>自動回帰テスト"]
     s3 --> check{PASS?}
-    check -->|"✅ PASS"| s4["④ git commit\nvba_modules/ + xlsm\nをセットでコミット"]
+    check -->|"✅ PASS"| s4["④ git commit<br/>vba_modules/ + xlsm<br/>をセットでコミット"]
     check -->|"❌ FAIL"| s1
 
     subgraph sync["xlsm を直接修正した場合の同期（例外）"]
-        direct["VBA エディタで\nxlsm を直接編集"]
-        --> extract["extract.bat を実行\nextract_vba.py が\nテキストに抽出"]
-        --> back["vba_modules/ が更新される\n→ 上記フロー ② へ"]
+        direct["VBA エディタで<br/>xlsm を直接編集"]
+        --> extract["extract.bat を実行<br/>extract_vba.py が<br/>テキストに抽出"]
+        --> back["vba_modules/ が更新される<br/>→ 上記フロー ② へ"]
     end
 ```
 

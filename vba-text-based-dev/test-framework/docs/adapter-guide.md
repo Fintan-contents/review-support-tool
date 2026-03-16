@@ -14,7 +14,7 @@ graph TD
     SR["scenario_runner.py"]
     EO["ExecutionOrchestrator"]
     EP["ExcelPlatform"]
-    Adapter["ToolAdapter\n（ツール固有実装）"]
+    Adapter["ToolAdapter<br/>（ツール固有実装）"]
     Excel["Excel / VBA"]
 
     Runner --> SR
