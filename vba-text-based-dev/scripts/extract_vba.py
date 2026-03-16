@@ -102,6 +102,10 @@ def extract_vba(xlsm_path: str, output_dir: str) -> int:
         cleaned_lines = []
 
         for line in code_lines:
+            # olevba のセキュリティ解析レポート（テーブル）の開始行で打ち切る
+            # 例: "+----------+--------------------+..." で始まる行
+            if line.startswith('+---'):
+                break
             # 空行や区切り線を除外
             if line.strip() and not line.startswith('---'):
                 cleaned_lines.append(line)
