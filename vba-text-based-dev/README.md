@@ -19,6 +19,57 @@ Excel VBA マクロには以下の課題があります：
 3. **VBAビルド**: 編集したテキストファイルを xlsm ファイルにマージ
 4. **Git管理**: テキストファイルを Git でバージョン管理（差分・レビューが可能）
 
+## 仕組みの概要
+
+### ファイル構成と変換の関係
+
+```mermaid
+flowchart LR
+    subgraph git["Git 管理（差分・コードレビュー可能）"]
+        direction TB
+        vba_text["📝 vba_modules/\n*.cls / *.bas\nテキストファイル"]
+        xlsm_file["📊 *.xlsm\nバイナリファイル"]
+    end
+
+    editor["テキストエディタで\nVBA コードを編集"]
+    build_script["build_vba.py\nテキスト → xlsm に統合"]
+    extract_script["extract_vba.py\nxlsm → テキストに抽出"]
+    tests["run_auto_tests.bat\n自動回帰テスト"]
+
+    editor -->|保存| vba_text
+    vba_text -->|"② build.bat"| build_script
+    build_script -->|xlsm を更新| xlsm_file
+    xlsm_file -->|"③ テスト実行"| tests
+    xlsm_file -. "extract.bat
+（VBA エディタで直接
+修正した場合のみ）" .-> extract_script
+    extract_script -. テキストを同期 .-> vba_text
+```
+
+実線が**通常の開発フロー**（テキスト編集 → ビルド → テスト）、破線が**例外フロー**（xlsm を直接修正した後の同期）です。
+
+### 開発フロー
+
+```mermaid
+flowchart TD
+    start(["VBA コードを変更する"])
+
+    start --> s1["① vba_modules/ の\nテキストファイルを編集\n（VSCode 等）"]
+    s1 --> s2["② build.bat を実行\nbuild_vba.py が\nテキストを xlsm に反映"]
+    s2 --> s3["③ run_auto_tests.bat\n自動回帰テスト"]
+    s3 --> check{PASS?}
+    check -->|"✅ PASS"| s4["④ git commit\nvba_modules/ + xlsm\nをセットでコミット"]
+    check -->|"❌ FAIL"| s1
+
+    subgraph sync["xlsm を直接修正した場合の同期（例外）"]
+        direct["VBA エディタで\nxlsm を直接編集"]
+        --> extract["extract.bat を実行\nextract_vba.py が\nテキストに抽出"]
+        --> back["vba_modules/ が更新される\n→ 上記フロー ② へ"]
+    end
+```
+
+> **注意**: xlsm 単体でのコミットは差分が見えないため禁止です。必ず `vba_modules/` と `xlsm` をセットでコミットしてください。
+
 ## ディレクトリ構造
 
 ```text
