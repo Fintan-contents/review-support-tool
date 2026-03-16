@@ -266,14 +266,17 @@ actualSumifStart はL列(12)以上にクランプされる。
 
 ### REVIEW_RESULT 列位置正当性
 
-カテゴリ数が10以上（レビュー記録一覧の `DETAIL_COL_LIST_CATEGORY_A + 9` 以降に列が存在する）場合、
 `REVIEW_RESULT` 列が動的計算（`DETAIL_COL_LIST_CATEGORY_A + categoryCount`）で正しい位置に書き込まれることを検証する。
-固定定数 `DETAIL_COL_LIST_REVIEW_RESULT = 38` を使用すると、カテゴリ10番目（エイリアス j）の列が上書きされるバグがある。
+固定定数 `DETAIL_COL_LIST_REVIEW_RESULT = 38` は N=9 のときのみ正しく、N≠9 では列位置がずれる。
+
+- **N > 9**（10以上）: カテゴリ10番目（エイリアス j）の列（列38）がレビュー結果値で上書きされるバグが発現する
+- **N < 9**（9未満）: `DETAIL_COL_LIST_CATEGORY_A + N` が 38 より小さくなるため、レビュー結果が存在しない列に書き込まれるバグが発現する
 
 | ID | 観点 | 対応シナリオ |
 |----|------|------------|
 | 76 | カテゴリ数が10以上の場合、レビュー記録一覧の10番目以降のカテゴリ件数が正しく書き込まれる（REVIEW_RESULT 列に上書きされない） | S37 |
-| 77 | カテゴリ数が10以上の場合、レビュー結果（合格/条件付合格）が正しい列（DETAIL_COL_LIST_CATEGORY_A + categoryCount）に書き込まれる | S37 |
+| 77 | カテゴリ数が10以上の場合、レビュー結果（合格/条件付合格）が正しい列（DETAIL_COL_LIST_CATEGORY_A + categoryCount）に書き込まれる | S37, S40, S41 |
+| 80 | カテゴリ数が9未満（3カテゴリ）の場合、レビュー結果（合格）が正しい列（DETAIL_COL_LIST_CATEGORY_A + 3 = 列32）に書き込まれる | S42 |
 
 ---
 
