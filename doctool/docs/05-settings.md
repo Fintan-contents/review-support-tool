@@ -190,13 +190,14 @@ Const DETAIL_COL_LIST_REVIEWER = 17      ' レビュアの列
 Const DETAIL_COL_LIST_REVIEWEE = 23      ' レビュイの列
 Const DETAIL_COL_LIST_REVIEW_WAY = 25    ' レビュー方式の列
 Const DETAIL_COL_LIST_CATEGORY_TOTAL = 28  ' 指摘合計の列
-Const DETAIL_COL_LIST_CATEGORY_START = 29  ' 指摘分類の開始列（2026-03-31: 動的。設定シートのカテゴリ数に応じてN列分使用）
-' 2026-03-31 以降は廃止し DETAIL_COL_LIST_CATEGORY_START + N で計算する:
-'   DETAIL_COL_LIST_REVIEW_RESULT  = DETAIL_COL_LIST_CATEGORY_START + categoryCount
-'   DETAIL_COL_LIST_RE_REVIEW_WAY  = DETAIL_COL_LIST_CATEGORY_START + categoryCount + 1
+Const DETAIL_COL_LIST_CATEGORY_A = 29      ' 指摘分類の開始列（エイリアス a に対応。設定シートのカテゴリ数に応じてN列分使用）
+' 以下2つは DETAIL_COL_LIST_CATEGORY_A + categoryMappings.Count で動的計算すべき定数（要修正）:
+Const DETAIL_COL_LIST_REVIEW_RESULT = 38   ' レビュー結果の列（固定値: カテゴリ10番目と競合するバグあり → 動的計算に変更予定）
+Const DETAIL_COL_LIST_RE_REVIEW_WAY = 39   ' 再レビュー方法の列（固定値: 同上）
 ```
 
-> **実装メモ**: 以前は `DETAIL_COL_LIST_CATEGORY_A`〜`DETAIL_COL_LIST_CATEGORY_I`（列 29〜37）を固定定数で定義していた。カテゴリ数が可変になったため、`DETAIL_COL_LIST_CATEGORY_START = 29` を基点とした動的オフセット計算に統一する。
+> **実装メモ**: 以前は `DETAIL_COL_LIST_CATEGORY_A`〜`DETAIL_COL_LIST_CATEGORY_I`（列 29〜37）を固定定数で定義していた。カテゴリ数が可変になったため、`DETAIL_COL_LIST_CATEGORY_A = 29` を基点とした動的オフセット計算に統一済み。
+> ただし `DETAIL_COL_LIST_REVIEW_RESULT` と `DETAIL_COL_LIST_RE_REVIEW_WAY` は固定定数のままになっており、カテゴリ数が10以上の場合にバグが発生する。これらは `DETAIL_COL_LIST_CATEGORY_A + categoryMappings.Count` の動的計算式に変更する（S37 で検証）。
 
 ### クリーンアップ処理
 
@@ -227,6 +228,7 @@ Const DETAIL_COL_LIST_CATEGORY_START = 29  ' 指摘分類の開始列（2026-03-
 | 2 | 2026-03-06 | 1.1 | Claude Code | docs/ へ分割・現行仕様（Phase1+Phase2実装済み）に整理 |
 | 3 | 2026-03-07 | 1.2 | Claude Code | 動的カテゴリ対応仕様を反映：エイリアス体系セクション追加、カテゴリ列定数を動的方式（CATEGORY_START）に更新 |
 | 4 | 2026-03-15 | 1.3 | Claude Code | cmd_289 VBA改善を反映：SHT_*定数・BasicSettings型・MappingConfig型・SheetTemplate定数（CATEGORY_DISPLAY_ROW_START/END・SUMMARY/LIST_ROW_SEARCH_LIMIT）を追加 |
+| 5 | 2026-03-16 | 1.4 | Claude Code | 総点検に基づく修正：DETAIL_COL_LIST_CATEGORY_START → DETAIL_COL_LIST_CATEGORY_A に統一（コード実装名と一致させる）。DETAIL_COL_LIST_REVIEW_RESULT / RE_REVIEW_WAY の固定定数バグ（カテゴリ10以上で競合）を記録 |
 
 ---
 

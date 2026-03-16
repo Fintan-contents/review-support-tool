@@ -43,7 +43,7 @@
 | 関数名 | 戻り値 | 説明 |
 |-------|-------|------|
 | `LoadBasicSettings(targetPattern, noTargetPattern)` | BasicSettings | 基本設定シートから設定値を読み込み、正規表現パターンをByRefで返す |
-| `LoadCategoryMappings(testMode)` | Object（Dictionary） | 指摘分類マッピング設定シートを読み込む（E12チェック含む。失敗時は Nothing を返す） |
+| `LoadCategoryMappings(testMode)` | Object（Dictionary） | 指摘分類マッピング設定シートを読み込む（E12チェック: カテゴリ0件、E14チェック: エイリアス重複、E15チェック: エイリアス形式不正（英小文字1〜2文字以外）。失敗時は Nothing を返す） |
 | `LoadItemMappings()` | MappingConfig | 項目マッピング設定シートを読み込む（34フィールド） |
 | `ValidateReviewListInputs(...)` | Boolean | レビュー記録一覧の入力値バリデーション（E01〜E05。True=続行可） |
 
