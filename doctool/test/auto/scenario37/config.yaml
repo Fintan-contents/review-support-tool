@@ -3,7 +3,7 @@ instructions:
 - 12カテゴリ設定（a-l）+ レビュー記録サマリ使用 + レビュー記録票使用 で抽出実行
 - '検証: エイリアス "j"（10番目）のコメント件数が正しい列に書き込まれること'
 - '検証: REVIEW_RESULT値が DETAIL_COL_LIST_CATEGORY_A + 12 の列に書き込まれること'
-- template_assertions でテンプレートのカテゴリ列数を検証（Gold Master は VBA 修正後に Windows 環境で作成）
+- Gold Master 比較で列位置の正当性を検証
 setup:
   use_review_record: true
   use_summary: true
@@ -41,6 +41,3 @@ steps:
 expected_messages:
 - C02
 - I01
-template_assertions:
-- sheet: レビュー結果シートテンプレート
-  category_count: 12
