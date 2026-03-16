@@ -306,16 +306,33 @@ End Function
 ' 関数名: LoadCategoryMappings
 ' 機能: 指摘分類マッピング設定シートからDictionaryを構築する
 '       カテゴリが0件の場合はE12エラーを表示しNothingを返す
+'       エイリアスの形式不正（英小文字1〜2文字以外）の場合はE15エラー
+'       エイリアスの重複がある場合はE14エラー
 ' 引数: testMode - テストモードフラグ
 ' 戻値: Object (Dictionary)、エラー時はNothing
 '=====================================================
 Public Function LoadCategoryMappings(testMode As Boolean) As Object
     Dim categoryMappings As Object
     Dim row As Long
+    Dim aliasVal As String
+    Dim re As Object
     Set categoryMappings = CreateObject("Scripting.Dictionary")
+    Set re = CreateObject("VBScript.RegExp")
+    re.Pattern = "^[a-z]{1,2}$"
     With ThisWorkbook.Worksheets(SHT_CATEGORY_MAPPINGS)
         For row = 2 To .Cells(Application.Rows.Count, 1).End(xlUp).Row
-            Call categoryMappings.Add(.Cells(row, 1).Value, .Cells(row, 2).Value)
+            aliasVal = .Cells(row, 1).Value
+            If Not re.Test(aliasVal) Then
+                Module2.ShowMsg testMode, "E15", "指摘分類マッピング設定シートにエイリアスの形式が不正です。エイリアス """ & aliasVal & """ は英小文字1〜2文字のみ使用できます。設定シートのエイリアスを修正してください。", vbExclamation
+                Set LoadCategoryMappings = Nothing
+                Exit Function
+            End If
+            If categoryMappings.Exists(aliasVal) Then
+                Module2.ShowMsg testMode, "E14", "指摘分類マッピング設定シートにエイリアスの重複があります。エイリアス """ & aliasVal & """ が重複して登録されています。設定シートのエイリアスを修正してください。", vbExclamation
+                Set LoadCategoryMappings = Nothing
+                Exit Function
+            End If
+            Call categoryMappings.Add(aliasVal, .Cells(row, 2).Value)
         Next row
     End With
     If categoryMappings.Count = 0 Then
@@ -1519,8 +1536,8 @@ Public Sub WriteToReviewList(listSheet As Worksheet, output As Worksheet, _
         If (listSheet.Cells(listRow, DETAIL_COL_LIST_CATEGORY_TOTAL).Value = 0 And errcount = 0) Then
             reviewResult = "合格"
         End If
-        listSheet.Cells(listRow, DETAIL_COL_LIST_REVIEW_RESULT) = reviewResult
-        listSheet.Cells(listRow, DETAIL_COL_LIST_RE_REVIEW_WAY) = ""
+        listSheet.Cells(listRow, DETAIL_COL_LIST_CATEGORY_A + categoryMappings.Count) = reviewResult
+        listSheet.Cells(listRow, DETAIL_COL_LIST_CATEGORY_A + categoryMappings.Count + 1) = ""
     End If
 End Sub
 
