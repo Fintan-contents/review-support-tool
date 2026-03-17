@@ -1,15 +1,23 @@
-viewpoint: '観点85: 複数の設計書を同時に開いて抽出した場合、レビュー記録一覧に複数行（各設計書1行）が正しく追加される'
+viewpoint: '観点84: 条件付合格の件数が閾値を超過した場合（件数 > CONDITIONAL_COUNT）、DetermineReviewResult は "" を返し REVIEW_RESULT が空欄になる'
 instructions:
-- 設計書A（a:1件未済、c:1件未済）+ 設計書B（b:1件未済）を同時に開いて抽出
-- レビュー記録一覧に2行が追加され、各行のカテゴリ件数が正しいことを Gold Master で検証
+- 12カテゴリ設定（a-l）+ "j"のコメントのみ4件（閾値3を超過）+ CbConditional=True
+- 'CONDITIONAL_CATEGORY="j"、CONDITIONAL_COUNT=3 を設定'
+- 'j件数(4) > CONDITIONAL_COUNT(3) → 条件を満たさず reviewResult="" となること'
+- '検証: レビュー記録一覧の REVIEW_RESULT 列が空欄であること'
 - Gold Master は VBA ビルド後に Windows 環境で作成
 
 setup:
   use_review_record: true
   use_summary: true
   review_list_file: レビュー記録サマリ_S47.xlsx
+  controls:
+    CbConditional: true
+  named_ranges:
+    CONDITIONAL_CATEGORY: j
+    CONDITIONAL_COUNT: 3
 skip_open_files:
 - レビュー記録サマリ.*\.xlsx
+
 steps:
 - action: extract
   review_times: 1
@@ -20,6 +28,24 @@ steps:
     name: 分類002_b
   - alias: c
     name: 分類003_c
+  - alias: d
+    name: 分類004_d
+  - alias: e
+    name: 分類005_e
+  - alias: f
+    name: 分類006_f
+  - alias: g
+    name: 分類007_g
+  - alias: h
+    name: 分類008_h
+  - alias: i
+    name: 分類009_i
+  - alias: j
+    name: 分類010_j
+  - alias: k
+    name: 分類011_k
+  - alias: l
+    name: 分類012_l
 expected_messages:
 - C02
 - I01

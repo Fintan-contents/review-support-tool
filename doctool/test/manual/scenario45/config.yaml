@@ -1,14 +1,12 @@
 mode: manual
-viewpoint: "観点83: エラー後の画面状態が CleanupOnError によって正常に復旧される"
+viewpoint: "観点82-B: C01「いいえ」選択時に処理が中断され結果シートが生成されない"
 instructions:
-- "【事前準備】設計書・記録票を開いた状態で use_summary=true、ファイルパスを空欄に設定する"
-- "抽出ボタンを押すと E01 エラーが表示されることを確認"
-- "E01 ダイアログを閉じた後、以下を確認する:"
-- "  1. Excel の画面が正常に表示されている（ScreenUpdating=True の確認）"
-- "  2. マウスカーソルが通常の矢印カーソルに戻っている（Cursor=xlDefault の確認）"
-- "  3. Excel のステータスバーに「準備完了」等の通常表示が出ている（StatusBar=False の確認）"
-- "次に E04（存在しないファイルパスを指定）や E07（回数順序不正）でも同様に確認する"
-- "すべてのエラーケースで画面状態が正常に復旧することを確認"
+- "【事前準備】レビュー記録サマリ_S44.xlsx を Excel で開き、任意のセルを編集して未保存状態にする"
+- "【事前準備】設計書・レビュー記録票も開く（合計3ファイルが開いた状態）"
+- "抽出ボタンを押すと C01 ダイアログが表示されることを確認"
+- "「いいえ」を選択すると処理が中断されることを確認"
+- "I01 が表示されないことを確認"
+- "設計書に「レビュー結果1回目」シートが生成されていないことを確認"
 
 setup:
   use_review_record: true
@@ -25,9 +23,5 @@ steps:
   - alias: c
     name: 分類003_c
 
-# CleanupOnError は VBA の On Error GoTo ERROR → CleanupOnError() で呼ばれる
-# テストする状態:
-#   - Application.ScreenUpdating = True
-#   - Application.Cursor = xlDefault
-#   - Application.StatusBar = False
-# 自動テストでは Excel 起動ごとに新プロセスが使われるため目視確認が必要
+# C01 は「サマリが開かれかつ未保存」の場合のみ発火するため手動テスト
+# パターン B: C01「いいえ」→ 処理中断（I01 非表示・結果シート非生成）
