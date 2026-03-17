@@ -10,7 +10,7 @@ REM Actual output files are saved to: test\temp_dir\scenarioXX\
 cd /d %~dp0
 set TOOL_TEST_ROOT=%~dp0
 
-set FRAMEWORK=..\..\vba-text-based-dev\test-framework\scripts
+set FRAMEWORK=..\..\..\test-framework\scripts
 
 if "%1"=="" (
     echo ====================================

@@ -10,10 +10,9 @@ REM Actual output files are saved to: test\temp_dir\scenarioXX\
 cd /d %~dp0
 set TOOL_TEST_ROOT=%~dp0
 
-set FRAMEWORK=..\..\vba-text-based-dev\test-framework\scripts
+set FRAMEWORK=..\..\..\test-framework\scripts
 
-REM adapters パッケージを含む scripts/ を PYTHONPATH に追加する
-set PYTHONPATH=%~dp0..\..\vba-text-based-dev\test-framework\scripts;%PYTHONPATH%
+set PYTHONPATH=%~dp0..\..\..\test-framework\scripts;%PYTHONPATH%
 
 if "%1"=="" (
     echo ====================================

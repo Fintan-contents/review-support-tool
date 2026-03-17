@@ -3,8 +3,3 @@
 # テスト対象の xlsm を特定する。
 xlsm_path: "../Excel設計書レビュー指摘事項抽出ツール/Excel設計書レビュー指摘事項抽出ツール.xlsm"
 xlsm_name: "Excel設計書レビュー指摘事項抽出ツール.xlsm"
-
-# テストアダプタ設定（汎用テストエンジンがツール固有処理をアダプタ経由で呼び出す）
-adapter:
-  module: "adapters.doctool_adapter"
-  class: "DoctoolAdapter"
