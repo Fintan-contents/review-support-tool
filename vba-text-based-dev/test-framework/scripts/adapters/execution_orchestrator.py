@@ -231,6 +231,18 @@ class ExecutionOrchestrator:
                 else:
                     print(f"  ✓ expected_messages: 想定外メッセージなし")
 
+        # assert_file_glob_exists: ファイル存在確認（日時入りバックアップ等、動的ファイル名対応）
+        for pattern in config.get("assert_file_glob_exists", []):
+            matched = list(work_dir.glob(pattern))
+            if not matched:
+                errors.append(
+                    f"assert_file_glob_exists: '{pattern}' に一致するファイルが"
+                    f" {work_dir} に見つかりません"
+                )
+            else:
+                print(f"  ✓ assert_file_glob_exists: '{pattern}' → {matched[0].name}")
+            assertion_count += 1
+
         if assertion_count == 0:
             if "file_expectations" in config and config["file_expectations"] == []:
                 pass

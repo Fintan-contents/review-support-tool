@@ -1,0 +1,30 @@
+viewpoint: '観点81: CbBkup=True でレビュー記録一覧のバックアップファイルが作成される'
+instructions:
+- CbBkup=True + use_summary + 3カテゴリ + コメントなし（指摘ゼロ）で抽出実行
+- 'VBA の OpenReviewListFile 内で FileCopy が呼ばれ、レビュー記録サマリ_S43_YYYYMMDD_HHMMSS.xlsx が生成される'
+- '検証: assert_file_glob_exists でバックアップファイルの存在を確認'
+- Gold Master は VBA ビルド後に Windows 環境で作成
+
+setup:
+  use_review_record: true
+  use_summary: true
+  review_list_file: レビュー記録サマリ_S43.xlsx
+  controls:
+    CbBkup: true
+skip_open_files:
+- レビュー記録サマリ.*\.xlsx
+steps:
+- action: extract
+  review_times: 1
+  categories:
+  - alias: a
+    name: 分類001_a
+  - alias: b
+    name: 分類002_b
+  - alias: c
+    name: 分類003_c
+expected_messages:
+- C02
+- I01
+assert_file_glob_exists:
+- "レビュー記録サマリ_S43_*_*.xlsx"

@@ -323,6 +323,18 @@ def evaluate_scenario(work_dir: Path, scenario_src_dir: Path, config: dict, adap
         # expected_messages は assertion_count に含めない。
         # シート有無確認か Gold Master 比較のいずれかが必ず存在することを別途保証する。
 
+    # assert_file_glob_exists: ファイル存在確認（日時入りバックアップ等、動的ファイル名対応）
+    for pattern in config.get("assert_file_glob_exists", []):
+        matched = list(work_dir.glob(pattern))
+        if not matched:
+            errors.append(
+                f"assert_file_glob_exists: '{pattern}' に一致するファイルが"
+                f" {work_dir} に見つかりません"
+            )
+        else:
+            print(f"  ✓ assert_file_glob_exists: '{pattern}' → {matched[0].name}")
+        assertion_count += 1
+
     # 構造的アサーション（シート有無確認 / Gold Master 比較 / template_assertions）が
     # 1件もない場合はテスト設定ミスとして失敗。
     # ただし file_expectations: [] が明示指定されている場合は「出力なし」が意図的であるため除外。
