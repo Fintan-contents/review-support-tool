@@ -1,15 +1,15 @@
 # getpr
 
-プルリクエスト/マージリクエストからコメントを取得して CSV ファイルへ書き出すコマンドラインプログラム。
-GitHub、GitLab、GitBucket へ対応している。
+プルリクエスト/マージリクエストからコメントを取得してCSVファイルへ書き出すコマンドラインプログラム。
+GitHub、GitLab、GitBucketへ対応している。
 
 プルリクエスト/マージリクエストからコメントを取得している手段は次の通り。
 
 - GitHub: GraphQL API
 - GitLab: REST API
-- GitBucket: DOM 操作(※)
+- GitBucket: DOM操作(※)
 
-※必要な情報を取得するための API が実装されていないため、DOM 操作を行っている
+※必要な情報を取得するためのAPIが実装されていないため、DOM操作を行っている
 
 ## ビルド方法
 
@@ -17,7 +17,7 @@ GitHub、GitLab、GitBucket へ対応している。
 go build -o getpr.exe cmd\main.go
 ```
 
-Windows 以外の場合はこちらのコマンド。
+Windows以外の場合はこちらのコマンド。
 
 ```bash
 go build -o getpr cmd/main.go
@@ -27,7 +27,7 @@ go build -o getpr cmd/main.go
 
 ### 設定
 
-`getpr.exe --help` を参照。
+`getpr.exe --help`を参照。
 
 ### CSVファイル仕様
 
@@ -43,9 +43,9 @@ go build -o getpr cmd/main.go
 | 3    | `reviewMinutes`   | レビュー時間。               |
 
 - 追加行数・削除行数に関する補足
-  - GitHub は API（GraphQL）でプルリクエストに含まれる差分の追加行数と削除行数を取得できる
-  - GitLab は直接追加行数と削除行数を取得する API は用意されていないため、差分を取得して算出する
-  - GitBucket は API でも差分取得ができず、HTML にも差分は書き出されず、JavaScript を用いて差分を算出しているため、本ツールでは常に 0 を返す
+    - GitHubはAPI（GraphQL）でプルリクエストに含まれる差分の追加行数と削除行数を取得できる
+    - GitLabは直接追加行数と削除行数を取得するAPIは用意されていないため、差分を取得して算出する
+    - GitBucketはAPIでも差分取得ができず、HTMLにも差分は書き出されず、JavaScriptを用いて差分を算出しているため、本ツールでは常に0を返す
 
 #### 2行目以降
 
@@ -56,17 +56,17 @@ go build -o getpr cmd/main.go
 | 3    | `reviewer`          | レビュアーのユーザー名。                                                                                                                               |
 | 4    | `revieweeComment`   | 対応内容。GitHubとGitLabはAPIで取得したマークダウン、GitBucketはAPIが使えないためHTMLをパースして得たテキスト。改行はエスケープして1行にする。         |
 | 5    | `reviewee`          | レビュイーのユーザー名。                                                                                                                               |
-| 6    | `resolved`          | APIで取得できる指摘の解決状態。GitHubの通常コメントと、GitBucketは指摘の解決状態を取得できないので `false` を返す。                                      |
-| 7    | `hasResolvedStatus` | APIで指摘の解決状態を取得できる場合は `true` を返す。GitHubの通常コメントと、GitBucketは指摘の解決状態を取得できないので `false` を返す。                  |
+| 6    | `resolved`          | APIで取得できる指摘の解決状態。GitHubの通常コメントと、GitBucketは指摘の解決状態を取得できないので`false`を返す。                                      |
+| 7    | `hasResolvedStatus` | APIで指摘の解決状態を取得できる場合は`true`を返す。GitHubの通常コメントと、GitBucketは指摘の解決状態を取得できないので`false`を返す。                  |
 
 指摘コメントの取得について、スレッド形式と非スレッド形式で次の通り加工方法が異なる。
 
 - スレッド形式の場合
-  - レビュアーとレビュイーのコメントをそれぞれ集約する
-  - プルリクエスト（マージリクエスト）作成者をレビュイー、それ以外をレビュアーとみなす
-  - スレッドにレビュアーのコメントが複数ある場合、2 つ目以降のコメントには先頭に `post-script-prefix` を付ける（レビュイーのコメントも同様）
-  - レビュアーのコメントとレビュイーのコメントを `delimiter` で繋ぐ
-  - 改行をエスケープする
-  - ここまでの加工を行なったものを CSV に書き出す
+    - レビュアーとレビュイーのコメントをそれぞれ集約する
+    - プルリクエスト（マージリクエスト）作成者をレビュイー、それ以外をレビュアーとみなす
+    - スレッドにレビュアーのコメントが複数ある場合、2つ目以降のコメントには先頭に`post-script-prefix`を付ける（レビュイーのコメントも同様）
+    - レビュアーのコメントとレビュイーのコメントを`delimiter`で繋ぐ
+    - 改行をエスケープする
+    - ここまでの加工を行なったものをCSVに書き出す
 - 非スレッド形式の場合
-  - 取得したコメントの改行をエスケープして CSV に書き出す
+    - 取得したコメントの改行をエスケープしてCSVに書き出す
