@@ -1,4 +1,0 @@
-# WSL2 Python 環境用
-# VBA抽出（oletools）のみ。VBAビルドは Windows 側の pywin32 を使う
-# インストール: pip install -r vba-text-based-dev/requirements-wsl2.txt
-oletools==0.60.2
